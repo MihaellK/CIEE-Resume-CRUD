@@ -1,0 +1,20 @@
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: ciee_sqlserver_dev
+    environment:
+      - ACCEPT_EULA=Y
+      # Senha de desenvolvimento. Em produção, isso seria injetado via Secrets/Vault.
+      - MSSQL_SA_PASSWORD=Dev@Sql2022!_Test
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+    healthcheck:
+      test: [ "CMD", "/opt/mssql-tools18/bin/sqlcmd", "-S", "localhost", "-U", "sa", "-P", "Dev@Sql2022!_Test", "-Q", "SELECT 1", "-No" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  sqlserver_data:
