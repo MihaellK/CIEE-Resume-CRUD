@@ -12,7 +12,7 @@ public class ResumeTests
     public void Constructor_ShouldThrowArgumentException_WhenNameIsNullOrWhitespace(string? invalidName)
     {
         // Arrange & Act
-        Action act = () => new Resume(invalidName = "", "email@teste.com", new byte[] { 0x01 });
+        Action act = () => new Resume(invalidName, "email@teste.com", null, new byte[] { 0x01 });
 
         // Assert
         act.Should().Throw<ArgumentException>()
@@ -26,7 +26,7 @@ public class ResumeTests
         var emptyPdf = Array.Empty<byte>();
 
         // Act
-        Action act = () => new Resume("João Silva", "joao@teste.com", emptyPdf);
+        Action act = () => new Resume("João Silva", "joao@teste.com", null, emptyPdf);
 
         // Assert
         act.Should().Throw<ArgumentException>()
@@ -41,7 +41,7 @@ public class ResumeTests
         var oversizedPdf = new byte[5 * 1024 * 1024 + 1]; 
 
         // Act
-        Action act = () => new Resume("João Silva", "joao@teste.com", oversizedPdf);
+        Action act = () => new Resume("João Silva", "joao@teste.com", null, oversizedPdf);
 
         // Assert
         act.Should().Throw<ArgumentException>()

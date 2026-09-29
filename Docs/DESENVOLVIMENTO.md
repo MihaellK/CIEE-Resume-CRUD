@@ -39,3 +39,27 @@
 - **Adaptações e Correções:** O arquivo `Program.cs` foi limpo, removendo o source generator do .NET 10 e mantendo apenas o essencial para inicialização do Swagger.
 - **Verificação:** Executado `dotnet test`. Total de 4 testes aprovados (Name validation, Empty PDF validation, Max Size PDF validation).
 - **Limitações Conhecidas:** A validação confia apenas no array de bytes (tamanho e nulidade). A verificação da "assinatura real" do arquivo (Magic Numbers para garantir que é de fato um PDF e não um arquivo renomeado) ainda será necessária na camada de Application/Upload.
+
+## Bloco 6: Extração de Dados via Regex e Setup de Controle de Versão (TDD)
+- **Etapa/Funcionalidade:** Inicialização do Git e criação do `ResumeParserService` para extrair E-mail e Telefone a partir de textos brutos.
+- **Decisão Técnica e Motivação:** A responsabilidade de extrair dados foi separada da leitura binária do PDF. O `ResumeParserService` recebe apenas texto (string), facilitando testes unitários rápidos sem depender de I/O de arquivos. Utilização de Expressões Regulares (Regex) nativas do .NET e `record` para transporte imutável dos dados extraídos. O Git foi inicializado para garantir rastreabilidade das mudanças estruturais.
+- **Participação da IA:** Sugeriu os padrões de Regex adaptados para formatação de e-mails universais e telefones no padrão brasileiro (com ou sem DDD, com ou sem o nono dígito). Forneceu os comandos de controle de versão solicitados pelo desenvolvedor.
+- **Adaptações e Correções:** O setup do repositório Git e `.gitignore` foi antecipado a pedido do desenvolvedor antes da consolidação do código de parsing para garantir um ponto de restauração seguro.
+- **Verificação:** Executado `dotnet test`. O parser extraiu os dados corretamente quando presentes e retornou campos nulos de forma segura em textos sem informações de contato.
+- **Limitações Conhecidas:** Expressões regulares são sensíveis a layouts muito exóticos. O parser atual não lida com OCR (imagens escaneadas dentro do PDF), operando sob a premissa de que o PDF possui uma camada de texto digital legível.
+
+## Bloco 7: Extração de Texto de PDF (Fase Green)
+- **Etapa/Funcionalidade:** Implementação da leitura de arquivos PDF utilizando a biblioteca `PdfPig`.
+- **Decisão Técnica e Motivação:** A escolha do `PdfPig` (UglyToad.PdfPig) deve-se ao fato de ser uma biblioteca leve, 100% gerenciada em C# e de código aberto (sem restrições severas de licenciamento comercial como o iTextSharp/iText7). A extração foca na camada de texto digital embutida no PDF, iterando página a página com o `StringBuilder` para otimizar o uso de memória.
+- **Participação da IA:** Forneceu a implementação do serviço encapsulando o `PdfDocument.Open`, que automaticamente valida a integridade do arquivo.
+- **Adaptações e Correções:** O tratamento de erro de formato não precisou de verificações manuais de Magic Numbers (ex: `%PDF-1.`), pois delegou-se essa responsabilidade diretamente para a exceção `PdfDocumentFormatException` nativa da biblioteca.
+- **Verificação:** Executado `dotnet test`. O teste `ExtractText_ShouldThrowException_WhenByteArrayIsNotAValidPdf` passou com sucesso (Fase Green).
+- **Limitações Conhecidas:** A biblioteca `PdfPig` não realiza OCR. PDFs gerados puramente a partir de imagens escaneadas (sem camada de texto invisível) retornarão strings vazias.
+
+## Bloco 8: Orquestração do Upload de Currículo (Fase Green) e Refatoração de Domínio
+- **Etapa/Funcionalidade:** Implementação do `UploadResumeUseCase` interligando extração de texto, parsing de Regex e criação da entidade de domínio, além da correção de propriedades omitidas.
+- **Decisão Técnica e Motivação:** A lógica de orquestração foi isolada num Use Case (Application Service). Isto permite validar o fluxo completo de negócio em testes unitários utilizando mocks (`NSubstitute`) para as dependências de I/O (leitura do PDF real), garantindo execução rápida e fiável.
+- **Participação da IA:** Forneceu a estrutura inicial do caso de uso e corrigiu a omissão do atributo `Phone` no construtor da entidade `Resume`, adaptando todas as camadas afetadas pela quebra de contrato.
+- **Adaptações e Correções:** O desenvolvedor identificou precocemente a ausência do campo de telefone durante a execução do TDD (falha de asserção por nulidade). A classe `Resume` e os testes de unidade de domínio associados foram atualizados para suportar o novo parâmetro.
+- **Verificação:** Executado `dotnet test`. O mock do `IPdfTextExtractor` devolveu o texto simulado com sucesso, o `ResumeParserService` extraiu o telefone corretamente, e a entidade de domínio foi instanciada com todos os dados preenchidos, tornando a suite 100% verde.
+- **Limitações Conhecidas:** O Use Case atual cria e devolve a entidade, mas ainda carece da persistência final (gravação na base de dados via Entity Framework Core).

@@ -7,10 +7,11 @@ public class Resume
     public Guid Id { get; private set; }
     public string Name { get; private set; }
     public string? Email { get; private set; }
+    public string? Phone { get; private set; }
     public byte[] PdfContent { get; private set; }
     public DateTime CreatedAt { get; private set; }
 
-    public Resume(string name, string? email, byte[] pdfContent)
+    public Resume(string name, string? email, string? phone, byte[] pdfContent)
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("Nome do candidato é obrigatório.", nameof(name));
@@ -24,6 +25,7 @@ public class Resume
         Id = Guid.NewGuid();
         Name = name;
         Email = email;
+        Phone = phone;
         PdfContent = pdfContent;
         CreatedAt = DateTime.UtcNow;
     }
