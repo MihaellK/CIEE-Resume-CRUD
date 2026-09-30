@@ -95,3 +95,28 @@
 - **Adaptações e Correções:** O uso do `ProblemDetails` foi adotado como padrão de resposta de erro para estar em conformidade com a RFC 7807, facilitando a vida ao frontend que irá consumir a API.
 - **Verificação:** Executado `dotnet test`. O `GlobalExceptionHandlerTests` validou que a execução do pipeline alterou o `StatusCode` da resposta para 400 sem lançar a exceção até ao anfitrião do servidor.
 - **Limitações Conhecidas:** Neste momento, todas as exceções não previstas respondem com uma mensagem genérica de erro interno. Num ambiente de produção real, faria sentido ligar um logger (`ILogger`) dentro do Handler para registar o rasto (stack trace) destas exceções de nível 500 no Application Insights ou Seq.
+
+# Inicio do Frontend    
+## Bloco 13: Setup Frontend de Testes e Formulário Base (Fase Green)
+- **Etapa/Funcionalidade:** Correção da configuração do Vite/Vitest e criação do componente `ResumeForm` básico com validação estrita.
+- **Decisão Técnica e Motivação:** A escolha do `react-hook-form` baseia-se na performance (evita re-renders desnecessários típicos de formulários controlados). A integração com o `zod` permite validações declarativas robustas (schema-based) e inferência automática de tipos TypeScript, garantindo paridade com as regras de domínio do backend.
+- **Participação da IA:** Identificou o erro tipográfico no `vite.config.ts` através do print enviado pelo desenvolvedor e forneceu o código para sanar a fase Red do TDD do formulário.
+- **Adaptações e Correções:** O import `from 'view'` foi corrigido para `from 'vite'`.
+- **Verificação:** Executado `npm run test`. O React Testing Library simulou um clique no botão "Enviar" com o campo vazio, e o teste validou com sucesso a renderização condicional da mensagem de erro gerada pelo Zod.
+- **Limitações Conhecidas:** O formulário no momento apenas contempla o campo 'nome'. O campo para o arquivo PDF exige um tratamento específico (`FileList`) para extração do `File` via inputs não controlados, o que será abordado na próxima iteração.
+
+## Bloco 13.1: Correção de Tipagem do Vite/Vitest
+- **Etapa/Funcionalidade:** Resolução do erro de tipagem TS2769 no arquivo de configuração do Vite.
+- **Decisão Técnica e Motivação:** Alterar a importação do `defineConfig` de `vite` para `vitest/config`. Isto garante que o TypeScript reconhece a propriedade `test` injetada pelo ecossistema do Vitest sem causar falhas no servidor de build, mantendo a configuração unificada num único arquivo.
+- **Participação da IA:** Identificou a origem do erro de tipagem através da imagem de erro do compilador TS e forneceu o import adequado do pacote Vitest.
+- **Adaptações e Correções:** O import `import { defineConfig } from 'vite'` foi substituído por `import { defineConfig } from 'vitest/config'`.
+- **Verificação:** Executado `npm run test`. O erro de configuração desapareceu, permitindo que o Vitest executasse a suíte e deixasse o teste do componente `ResumeForm` no estado Green.
+- **Limitações Conhecidas:** Nenhuma. A configuração agora está tipada corretamente de forma estrita.
+
+## Bloco 14: Validação de Upload de Arquivo no Frontend (TDD - Fase Green)
+- **Etapa/Funcionalidade:** Adição do input de upload de arquivos e validação do `FileList` no esquema do Zod.
+- **Decisão Técnica e Motivação:** Como o `<input type="file" />` não pode ser um componente estritamente controlado no React por questões de segurança dos navegadores, a integração com o `react-hook-form` é feita via `register`, o que devolve um objeto `FileList`. Utilizamos `z.any().refine()` no Zod para interceptar este objeto e validar se a sua propriedade `length` é maior que 0. A restrição visual foi reforçada com o atributo HTML nativo `accept=".pdf"`.
+- **Participação da IA:** Forneceu a abordagem de validação customizada (`refine`) do Zod para contornar a ausência de um tipo `File/FileList` nativo no esquema padrão do framework.
+- **Adaptações e Correções:** O cast `as string` nas mensagens de erro foi adicionado no JSX para acalmar o strict mode do TypeScript que, ao usar `z.any()`, pode não inferir estritamente que a mensagem de retorno será sempre uma string.
+- **Verificação:** Executado `npm run test`. O React Testing Library testou a simulação de submissão do formulário preenchendo apenas o nome, e a asserção validou que o componente exibiu corretamente a mensagem "O currículo em PDF é obrigatório".
+- **Limitações Conhecidas:** A validação atual verifica apenas a presença do arquivo. As regras adicionais de tamanho (máximo 5MB) e tipo (application/pdf) ainda precisam ser garantidas também no front-end para evitar *roundtrips* desnecessários com o servidor.
