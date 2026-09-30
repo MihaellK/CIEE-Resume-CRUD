@@ -87,3 +87,11 @@
 - **Adaptações e Correções:** A interface do Use Case foi abstraída (`IUploadResumeUseCase`) na etapa de preparação para permitir a utilização de um mock estrito com `NSubstitute` nos testes da camada de API.
 - **Verificação:** Executado `dotnet test`. O teste validou que o endpoint `Upload` processa a simulação do `IFormFile`, invoca o caso de uso corretamente e devolve um `201 Created` sem expor os bytes originais.
 - **Limitações Conhecidas:** A validação de MIME type baseada na propriedade `ContentType` do HTTP é frágil e pode ser facilmente falsificada por um cliente mal-intencionado. Para um ambiente de produção rigoroso, a verificação profunda dos "Magic Numbers" do ficheiro manter-se-ia necessária.
+
+## Bloco 12: Tratamento Global de Exceções (TDD - Fase Green)
+- **Etapa/Funcionalidade:** Implementação do `GlobalExceptionHandler` utilizando a interface `IExceptionHandler` do .NET 8.
+- **Decisão Técnica e Motivação:** Centralizar o tratamento de erros no pipeline evita a proliferação de blocos `try-catch` nos Controllers. A interface `IExceptionHandler` permite mapear de forma limpa exceções específicas de Domínio (ex: `ArgumentException`) para códigos de estado HTTP adequados (400 Bad Request) através do formato padrão `ProblemDetails`.
+- **Participação da IA:** Forneceu o teste unitário simulando o contexto HTTP (Fase Red) e a respetiva implementação assíncrona do handler (Fase Green), bem como as instruções de registo no `Program.cs`.
+- **Adaptações e Correções:** O uso do `ProblemDetails` foi adotado como padrão de resposta de erro para estar em conformidade com a RFC 7807, facilitando a vida ao frontend que irá consumir a API.
+- **Verificação:** Executado `dotnet test`. O `GlobalExceptionHandlerTests` validou que a execução do pipeline alterou o `StatusCode` da resposta para 400 sem lançar a exceção até ao anfitrião do servidor.
+- **Limitações Conhecidas:** Neste momento, todas as exceções não previstas respondem com uma mensagem genérica de erro interno. Num ambiente de produção real, faria sentido ligar um logger (`ILogger`) dentro do Handler para registar o rasto (stack trace) destas exceções de nível 500 no Application Insights ou Seq.

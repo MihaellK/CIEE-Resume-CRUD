@@ -3,6 +3,7 @@ using ResumeCrud.API.Application.Services;
 using ResumeCrud.API.Domain.Repositories;
 using ResumeCrud.API.Infrastructure.Data;
 using ResumeCrud.API.Infrastructure.Repositories;
+using ResumeCrud.API.Infrastructure.Handlers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,8 +23,12 @@ builder.Services.AddScoped<IUploadResumeUseCase, UploadResumeUseCase>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddControllers();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddProblemDetails();
 
 var app = builder.Build();
+
+app.UseExceptionHandler();
 
 if (app.Environment.IsDevelopment())
 {
