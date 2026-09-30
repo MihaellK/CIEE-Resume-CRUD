@@ -1,12 +1,30 @@
+using Microsoft.EntityFrameworkCore;
+using ResumeCrud.API.Application.Services;
+using ResumeCrud.API.Domain.Repositories;
+using ResumeCrud.API.Infrastructure.Data;
+using ResumeCrud.API.Infrastructure.Repositories;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Adiciona serviços ao contêiner.
+// Configuração do Entity Framework Core
+builder.Services.AddDbContext<ResumeDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Injeção de Dependências (Infraestrutura)
+builder.Services.AddScoped<IResumeRepository, ResumeRepository>();
+
+// Injeção de Dependências (Aplicação)
+builder.Services.AddScoped<IPdfTextExtractor, PdfTextExtractorService>();
+builder.Services.AddScoped<ResumeParserService>();
+builder.Services.AddScoped<UploadResumeUseCase>();
+builder.Services.AddScoped<IUploadResumeUseCase, UploadResumeUseCase>();
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddControllers();
 
 var app = builder.Build();
 
-// Configura o pipeline HTTP.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -14,18 +32,6 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
-// Rota de teste padrão (removeremos depois)
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast = Enumerable.Range(1, 5).Select(index =>
-        new {
-            Date = DateTime.Now.AddDays(index),
-            TemperatureC = Random.Shared.Next(-20, 55),
-            Summary = "Testing"
-        })
-        .ToArray();
-    return forecast;
-});
+app.MapControllers();
 
 app.Run();

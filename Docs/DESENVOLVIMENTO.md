@@ -63,3 +63,27 @@
 - **Adaptações e Correções:** O desenvolvedor identificou precocemente a ausência do campo de telefone durante a execução do TDD (falha de asserção por nulidade). A classe `Resume` e os testes de unidade de domínio associados foram atualizados para suportar o novo parâmetro.
 - **Verificação:** Executado `dotnet test`. O mock do `IPdfTextExtractor` devolveu o texto simulado com sucesso, o `ResumeParserService` extraiu o telefone corretamente, e a entidade de domínio foi instanciada com todos os dados preenchidos, tornando a suite 100% verde.
 - **Limitações Conhecidas:** O Use Case atual cria e devolve a entidade, mas ainda carece da persistência final (gravação na base de dados via Entity Framework Core).
+
+## Bloco 9: Integração de Persistência no Use Case (TDD - Fase Green)
+- **Etapa/Funcionalidade:** Evolução do `UploadResumeUseCase` para execução assíncrona (`async/await`) e injeção da dependência `IResumeRepository`.
+- **Decisão Técnica e Motivação:** A operação de gravação numa base de dados deve ser assíncrona para não bloquear a thread principal do Kestrel (servidor web). A utilização da interface `IResumeRepository` aplica o princípio de Inversão de Dependência (SOLID), desacoplando a lógica de negócio do Entity Framework Core que será introduzido posteriormente.
+- **Participação da IA:** Propôs a atualização do teste para verificar a chamada ao método `AddAsync` do repositório utilizando `NSubstitute` (Fase Red) e forneceu a implementação da interface e a refatoração assíncrona do Use Case (Fase Green).
+- **Adaptações e Correções:** O contrato do Use Case foi alterado de `Execute` para `ExecuteAsync` para refletir a natureza I/O-bound da operação de gravação.
+- **Verificação:** Executado `dotnet test`. O `NSubstitute` validou que o método `AddAsync` foi chamado exatamente uma vez (`Received(1)`) com o ID correto da entidade gerada.
+- **Limitações Conhecidas:** A interface `IResumeRepository` existe apenas em memória através do mock nos testes. A implementação concreta que dialoga com o SQL Server será criada no próximo passo.
+
+## Bloco 10: Configuração do Entity Framework Core e Migrations
+- **Etapa/Funcionalidade:** Mapeamento da entidade `Resume` (Fluent API), configuração do `ResumeDbContext`, implementação concreta do `IResumeRepository` e geração da base de dados SQL Server via Migrations.
+- **Decisão Técnica e Motivação:** A utilização do EF Core com Fluent API mantém as regras de mapeamento do banco isoladas na camada de Infraestrutura, sem poluir a entidade de Domínio com atributos (Data Annotations). O repositório encapsula o `DbContext`, preservando a Inversão de Dependência estipulada no Use Case.
+- **Participação da IA:** Forneceu a estrutura do `DbContext`, o mapeamento do `byte[]` para varbinary e os comandos da CLI do EF. Identificou e corrigiu o conflito de versões do NuGet ao instalar os pacotes, forçando a trava na versão `8.0.10` para manter compatibilidade com o TargetFramework (LTS).
+- **Adaptações e Correções:** O comando padrão de instalação tentou buscar pacotes da versão .NET 10 (Preview), gerando o erro `NU1202`. A correção exigiu o uso da flag `-v 8.0.10` nos comandos `dotnet add package`.
+- **Verificação:** Executado `dotnet ef database update`. O banco de dados `ResumeDb` e a tabela `Resumes` foram criados fisicamente no contêiner do SQL Server, respeitando os comprimentos máximos de string (`HasMaxLength`) e restrições de nulidade (`IsRequired`).
+- **Limitações Conhecidas:** A connection string está diretamente no `appsettings.Development.json` contendo a senha do banco em plain text, prática aceitável apenas para este contexto de desenvolvimento local.
+
+## Bloco 11: Implementação do Endpoint de Upload (TDD - Fase Green)
+- **Etapa/Funcionalidade:** Criação do `ResumesController` para receção de ficheiros via HTTP POST (`multipart/form-data`) e conversão para invocação do Use Case.
+- **Decisão Técnica e Motivação:** A receção de ficheiros foi implementada com `IFormFile`. Para manter a pureza da camada de Aplicação (que não deve depender de tipos exclusivos do ASP.NET Core, como `IFormFile`), o Controller assume a responsabilidade de instanciar um `MemoryStream`, extrair o `byte[]` e passá-lo ao Use Case. A resposta utiliza um DTO dinâmico para garantir que o payload binário (`PdfContent`) nunca seja serializado e devolvido no JSON, poupando largura de banda.
+- **Participação da IA:** Forneceu o código do `ResumesController` com validações básicas de tipo MIME (`application/pdf`) e presença de ficheiro, orientando também a configuração dos Controllers no `Program.cs`.
+- **Adaptações e Correções:** A interface do Use Case foi abstraída (`IUploadResumeUseCase`) na etapa de preparação para permitir a utilização de um mock estrito com `NSubstitute` nos testes da camada de API.
+- **Verificação:** Executado `dotnet test`. O teste validou que o endpoint `Upload` processa a simulação do `IFormFile`, invoca o caso de uso corretamente e devolve um `201 Created` sem expor os bytes originais.
+- **Limitações Conhecidas:** A validação de MIME type baseada na propriedade `ContentType` do HTTP é frágil e pode ser facilmente falsificada por um cliente mal-intencionado. Para um ambiente de produção rigoroso, a verificação profunda dos "Magic Numbers" do ficheiro manter-se-ia necessária.
