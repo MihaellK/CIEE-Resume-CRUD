@@ -120,3 +120,19 @@
 - **Adaptações e Correções:** O cast `as string` nas mensagens de erro foi adicionado no JSX para acalmar o strict mode do TypeScript que, ao usar `z.any()`, pode não inferir estritamente que a mensagem de retorno será sempre uma string.
 - **Verificação:** Executado `npm run test`. O React Testing Library testou a simulação de submissão do formulário preenchendo apenas o nome, e a asserção validou que o componente exibiu corretamente a mensagem "O currículo em PDF é obrigatório".
 - **Limitações Conhecidas:** A validação atual verifica apenas a presença do arquivo. As regras adicionais de tamanho (máximo 5MB) e tipo (application/pdf) ainda precisam ser garantidas também no front-end para evitar *roundtrips* desnecessários com o servidor.
+
+## Bloco 15: Validações Estritas de Ficheiro no Frontend (TDD - Fase Green)
+- **Etapa/Funcionalidade:** Expansão do schema do Zod para validar o tipo MIME (`application/pdf`) e o tamanho máximo (5MB) do ficheiro submetido.
+- **Decisão Técnica e Motivação:** Replicar as regras de domínio do backend no formulário garante um *fail-fast* imediato na interface do utilizador. Isto poupa largura de banda, alivia o servidor de pedidos corrompidos e melhora a experiência do candidato. As regras foram encadeadas com `refine`, utilizando guardas para evitar o lançamento de múltiplos erros conflituantes quando o input está vazio.
+- **Participação da IA:** Forneceu a sintaxe encadeada de validações do `FileList` no Zod para fazer a suíte de testes unitários regressar à Fase Green.
+- **Adaptações e Correções:** Variáveis constantes (`MAX_FILE_SIZE` e `ACCEPTED_FILE_TYPES`) foram extraídas para o topo do ficheiro, tornando o código mais legível e fácil de manter.
+- **Verificação:** Executado `npm run test`. A React Testing Library comprovou a rejeição de ficheiros `.txt` e a recusa imediata de propriedades de tamanho superiores a 5MB, com todas as asserções de texto de erro a passarem.
+- **Limitações Conhecidas:** A validação confia no tipo MIME (propriedade `.type`) devolvido pelo navegador. Técnicas mais complexas de *spoofing* ainda precisarão da proteção real do backend (que já existe no nosso caso).
+
+## Bloco 16: Integração HTTP com a API via Axios (TDD - Fase Green)
+- **Etapa/Funcionalidade:** Implementação da submissão do formulário utilizando `axios` e `FormData`, incluindo gestão de estado de carregamento e feedback ao utilizador.
+- **Decisão Técnica e Motivação:** O envio de ficheiros exige obrigatoriamente o formato `multipart/form-data`. O objeto nativo `FormData` abstrai a montagem binária necessária para o browser. O Vitest permitiu realizar um mock completo do Axios, garantindo que o teste unitário valida a assinatura do método POST sem efetuar chamadas reais de rede, preservando a velocidade da suíte.
+- **Participação da IA:** Forneceu a simulação do Axios no contexto de testes (Fase Red) e construiu a lógica do `onSubmit` extraindo o ficheiro do `FileList` para o injetar no payload, além de incorporar estados de UI (`isSubmitting`, `feedback`).
+- **Adaptações e Correções:** O endpoint do servidor (`https://localhost:7198/api/resumes/upload`) foi fixado no código temporariamente de modo a garantir a aprovação no teste unitário escrito na etapa anterior. Foi introduzida a limpeza do formulário (`reset()`) em caso de sucesso.
+- **Verificação:** Executado `npm run test`. O espião (spy) do Vitest intercetou a chamada `axios.post`, confirmando que ocorreu exatamente 1 vez com o endpoint estipulado, recebendo um objeto instanciado a partir de `FormData` e os cabeçalhos MIME corretos.
+- **Limitações Conhecidas:** O URL da API encontra-se *hardcoded* no componente. Num ambiente real, este valor deve provir do ficheiro `.env` através de variáveis globais do Vite (`import.meta.env.VITE_API_URL`). O tratamento de exceções (bloco `catch`) também não discrimina ainda o formato `ProblemDetails` retornado pela nossa API em caso de erro 400.
