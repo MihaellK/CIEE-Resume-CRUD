@@ -48,7 +48,7 @@ const ResumeForm: React.FC = () => {
 
     try {
       // URL chumbado por agora para passar no teste. Será movido para .env depois.
-      await axios.post('https://localhost:1433/api/resumes/upload', formData, {
+      await axios.post(import.meta.env.VITE_API_URL, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },

@@ -136,3 +136,35 @@
 - **Adaptações e Correções:** O endpoint do servidor (`https://localhost:7198/api/resumes/upload`) foi fixado no código temporariamente de modo a garantir a aprovação no teste unitário escrito na etapa anterior. Foi introduzida a limpeza do formulário (`reset()`) em caso de sucesso.
 - **Verificação:** Executado `npm run test`. O espião (spy) do Vitest intercetou a chamada `axios.post`, confirmando que ocorreu exatamente 1 vez com o endpoint estipulado, recebendo um objeto instanciado a partir de `FormData` e os cabeçalhos MIME corretos.
 - **Limitações Conhecidas:** O URL da API encontra-se *hardcoded* no componente. Num ambiente real, este valor deve provir do ficheiro `.env` através de variáveis globais do Vite (`import.meta.env.VITE_API_URL`). O tratamento de exceções (bloco `catch`) também não discrimina ainda o formato `ProblemDetails` retornado pela nossa API em caso de erro 400.
+
+## Bloco 17: Configuração de CORS e Variáveis de Ambiente
+- **Etapa/Funcionalidade:** Habilitação do middleware de CORS no ASP.NET Core e migração do URL da API para o ficheiro `.env.local` no frontend.
+- **Decisão Técnica e Motivação:** O CORS restringe a comunicação entre origens diferentes por motivos de segurança. A configuração explícita do `WithOrigins` apontando para a porta do Vite (`5173`) permite o tráfego local seguro durante o desenvolvimento. O uso do `import.meta.env` segue as práticas recomendadas do Vite para injetar configurações específicas de ambiente (Dev/Prod) no tempo de build, evitando chumbamento de URLs no código fonte.
+- **Participação da IA:** Forneceu as configurações exatas do pipeline do ASP.NET Core e a sintaxe de variáveis de ambiente do Vite.
+- **Adaptações e Correções:** A porta da API no `.env.local` requer ajuste manual caso o Kestrel aloque uma porta diferente da predefinida (7198).
+- **Verificação:** Execução de teste manual (E2E) com o backend e frontend a correrem em simultâneo. Submissão de um PDF resultou num código HTTP 201 Created no separador Network das ferramentas de desenvolvimento do navegador e inserção bem-sucedida na base de dados.
+- **Limitações Conhecidas:** A política de CORS atual está fixada no `localhost:5173`. Para produção, esta origem terá de ser parametrizada através do `appsettings.json` para suportar o domínio de alojamento real (ex: Vercel, Netlify ou domínio próprio).
+
+## Bloco 18: Montagem do Componente Principal e Limpeza do Template
+- **Etapa/Funcionalidade:** Substituição do código padrão do Vite (`App.tsx` e `main.tsx`) pela montagem estrutural do componente `ResumeForm`.
+- **Decisão Técnica e Motivação:** Limpeza do *boilerplate* desnecessário para expor o formulário desenvolvido através do TDD. A estrutura foi mantida simples, utilizando o `StrictMode` do React para detetar potenciais efeitos colaterais na renderização.
+- **Participação da IA:** Forneceu a refatoração do ponto de entrada da aplicação, eliminando o código não utilizado do template inicial.
+- **Adaptações e Correções:** O CSS global gerado pelo Vite pode ser removido para evitar interferências visuais indesejadas. Estilos inline básicos foram aplicados ao contêiner principal para centralizar o formulário no ecrã.
+- **Verificação:** Execução de `npm run dev` e validação visual no navegador (`http://localhost:5173`) para confirmar a integração do componente.
+- **Limitações Conhecidas:** A aplicação ainda não possui um sistema de rotas (React Router) para navegação entre a página de upload e a futura página de listagem (Grid).
+
+## Bloco 18.1: Correção de Tipagem do Vite Client (import.meta.env)
+- **Etapa/Funcionalidade:** Inclusão dos tipos globais do Vite no compilador TypeScript.
+- **Decisão Técnica e Motivação:** O TypeScript reporta erro na leitura de variáveis de ambiente via `import.meta.env` por desconhecer a API específica do Vite. A adição de `"vite/client"` no `tsconfig.app.json` (ou via ficheiro de declaração global) instrui o compilador a reconhecer essa assinatura, devolvendo o *IntelliSense* correto sem comprometer o *build*.
+- **Participação da IA:** Identificou o erro de linting a partir da captura de ecrã e forneceu a configuração exata do compilador.
+- **Adaptações e Correções:** Atualização da secção `"types"` do TSConfig.
+- **Verificação:** Validação visual no VS Code indicando o desaparecimento do erro `ts(2339)` e manutenção da compilação verde no terminal.
+- **Limitações Conhecidas:** Nenhuma. Prática padrão da ferramenta.
+
+## Bloco 18.2: Resolução de Incompatibilidade de Protocolo (HTTP/HTTPS)
+- **Etapa/Funcionalidade:** Correção da variável de ambiente `VITE_API_URL` para coincidir com o protocolo exposto pelo Kestrel.
+- **Decisão Técnica e Motivação:** O frontend tentava comunicar via HTTPS com uma porta do backend configurada apenas para HTTP. A correção consistiu em alinhar os protocolos no ficheiro `.env.local`, garantindo que o CORS e a submissão de formulários operem sem interrupções de handshake SSL falhados no ambiente local.
+- **Participação da IA:** Analisou as evidências do terminal e do separador Network para identificar a divergência de protocolo (`http://` vs `https://`) e orientou o reinício do bundler (Vite) para recarregar as configurações de ambiente.
+- **Adaptações e Correções:** O prefixo do URL no frontend foi alterado de `https` para `http`.
+- **Verificação:** Execução manual. Após alinhamento, o envio do `FormData` resultou numa conexão bem-sucedida (Status 201).
+- **Limitações Conhecidas:** Num ambiente de produção, tanto o frontend como a API devem obrigatoriamente operar sob HTTPS para garantir a encriptação do tráfego (dados sensíveis do currículo).
