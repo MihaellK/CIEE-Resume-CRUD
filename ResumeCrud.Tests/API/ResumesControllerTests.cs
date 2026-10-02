@@ -30,7 +30,8 @@ public class ResumesControllerTests
         var ms = new MemoryStream(fakeBytes);
         mockFile.OpenReadStream().Returns(ms);
 
-        var controller = new ResumesController(uploadUseCaseMock, getUseCaseMock);
+        var parseUseCaseMock = Substitute.For<IParseResumeUseCase>();
+        var controller = new ResumesController(uploadUseCaseMock, getUseCaseMock, parseUseCaseMock);
 
         // Act
         // Chamada limpa passando os dois parâmetros explicitamente
@@ -63,7 +64,8 @@ public class ResumesControllerTests
 
         getUseCaseMock.ExecuteAsync().Returns(mockResumes);
 
-        var controller = new ResumesController(uploadUseCaseMock, getUseCaseMock);
+        var parseUseCaseMock = Substitute.For<IParseResumeUseCase>();
+        var controller = new ResumesController(uploadUseCaseMock, getUseCaseMock, parseUseCaseMock);
 
         // Act
         var result = await controller.Get();
@@ -74,5 +76,44 @@ public class ResumesControllerTests
 
         returnedResumes.Should().HaveCount(2);
         await getUseCaseMock.Received(1).ExecuteAsync();
+    }
+
+    [Fact]
+    public async Task Parse_ShouldReturnOkWithParsedData_WhenFileIsValid()
+    {
+        // Arrange
+        var uploadUseCaseMock = Substitute.For<IUploadResumeUseCase>();
+        var getUseCaseMock = Substitute.For<IGetResumesUseCase>();
+        var parseUseCaseMock = Substitute.For<IParseResumeUseCase>();
+
+        var fakeBytes = new byte[] { 1, 2, 3 };
+        var expectedDto = new ParsedResumeDto 
+        { 
+            Name = "João Silva", 
+            Email = "joao@teste.com", 
+            Phone = "11999999999" 
+        };
+
+        parseUseCaseMock.Execute(Arg.Any<byte[]>()).Returns(expectedDto);
+
+        var mockFile = Substitute.For<IFormFile>();
+        mockFile.Length.Returns(1024);
+        mockFile.FileName.Returns("curriculo.pdf");
+        mockFile.ContentType.Returns("application/pdf");
+        
+        var ms = new MemoryStream(fakeBytes);
+        mockFile.OpenReadStream().Returns(ms);
+
+        var controller = new ResumesController(uploadUseCaseMock, getUseCaseMock, parseUseCaseMock);
+
+        // Act
+        // Assumimos que o endpoint Parse receberá o arquivo via FormData de forma assíncrona
+        var result = await controller.Parse(mockFile);
+
+        // Assert
+        var okResult = result.Should().BeOfType<OkObjectResult>().Subject;
+        okResult.Value.Should().BeEquivalentTo(expectedDto);
+        
+        parseUseCaseMock.Received(1).Execute(Arg.Any<byte[]>());
     }
 }

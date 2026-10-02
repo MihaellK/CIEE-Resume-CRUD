@@ -288,3 +288,11 @@
 - **Adaptações e Correções:** Remoção do `ParsedResumeData` e das linhas `builder.Services.AddScoped<UploadResumeUseCase>();` e `builder.Services.AddScoped<ResumeParserService>();`.
 - **Verificação:** Execução do `dotnet test` confirmando o sucesso do Épico de Parsing (Fase Green).
 - **Limitações Conhecidas:** A heurística de obter o "Nome" através da primeira linha do PDF é falível se o documento tiver cabeçalhos estilizados (ex: "CURRÍCULO VITAE" no topo). O frontend deve sempre permitir a correção manual.
+
+## Bloco 24: Exposição do Endpoint de Extração e Refatoração (DRY)
+- **Etapa/Funcionalidade:** Implementação do endpoint `POST /api/resumes/parse` e injeção do `IParseResumeUseCase` no `ResumesController`. Criação do método privado `ValidatePdfFile`.
+- **Decisão Técnica e Motivação:** Para expor o motor de extração ao frontend (função de autofill), criou-se um endpoint dedicado que devolve `HTTP 200 OK` com os dados parseados, isolando-o do fluxo de criação. Para respeitar o princípio DRY (Don't Repeat Yourself), as validações do ficheiro (tamanho, formato e existência) foram encapsuladas num método privado, limpando os controladores HTTP e prevenindo divergências nas validações futuras.
+- **Participação da IA:** Forneceu a implementação do Controller alinhada com a Fase Green do teste, incluindo a refatoração imediata da validação do ficheiro.
+- **Adaptações e Correções:** O método `Parse` do Controller foi implementado de forma assíncrona para gerir a leitura da *stream* do `IFormFile`, invocando em seguida o UseCase de forma síncrona.
+- **Verificação:** Execução do `dotnet test`. O teste parametrizado interceptou o `IFormFile` simulado e validou com sucesso a devolução do `ParsedResumeDto`.
+- **Limitações Conhecidas:** Nenhuma. O endpoint está robusto e pronto para ser consumido pelo React.
