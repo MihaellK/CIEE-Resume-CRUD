@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using ResumeCrud.API.Infrastructure.Data;
 
@@ -11,9 +12,11 @@ using ResumeCrud.API.Infrastructure.Data;
 namespace ResumeCrud.API.Migrations
 {
     [DbContext(typeof(ResumeDbContext))]
-    partial class ResumeDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261002212700_AddNewResumeFields")]
+    partial class AddNewResumeFields
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -45,6 +48,7 @@ namespace ResumeCrud.API.Migrations
                         .HasColumnType("nvarchar(200)");
 
                     b.Property<byte[]>("PdfContent")
+                        .IsRequired()
                         .HasColumnType("varbinary(max)");
 
                     b.Property<string>("Phone")

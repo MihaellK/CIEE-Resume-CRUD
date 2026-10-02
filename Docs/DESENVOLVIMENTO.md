@@ -320,3 +320,27 @@
 - **Adaptações e Correções:** O construtor da entidade `Resume` é instanciado injetando `null` explicitamente no parâmetro `pdfContent`.
 - **Verificação:** Execução do `dotnet test` confirmando o sucesso da integração entre o UseCase e o repositório em memória mockado (`NSubstitute`).
 - **Limitações Conhecidas:** Nenhuma.
+
+## Bloco 27: Transição Final para Criação via JSON
+- **Etapa/Funcionalidade:** Substituição do endpoint `POST /upload` pelo endpoint RESTful `POST /` no `ResumesController`, aceitando a payload em JSON via `CreateResumeRequestDto`.
+- **Decisão Técnica e Motivação:** Conclusão da adaptação arquitetural para desacoplar o ficheiro PDF do processo de criação de registos. O controlador passou a gerir a criação de forma independente e padrão (Application/JSON), mantendo o endpoint `/parse` (Multipart/FormData) estritamente para suporte de preenchimento automático (Autofill). O antigo `UploadResumeUseCase` tornou-se obsoleto e as dependências foram atualizadas.
+- **Participação da IA:** Forneceu o código dos testes unitários atualizados (Fase Red) e do Controlador refatorado (Fase Green) para suportar o novo UseCase.
+- **Adaptações e Correções:** Atualização maciça de todos os mocks nos testes do Controller (`ResumesControllerTests.cs`) para injetar o `ICreateResumeUseCase` em vez do `IUploadResumeUseCase`.
+- **Verificação:** Execução expectável de `dotnet test` validando as respostas `HTTP 201 Created` via mock de DTO.
+- **Limitações Conhecidas:** Nenhuma. O CRUD primário está estabelecido e otimizado.
+
+## Bloco 28: Sincronização de Esquema de Base de Dados (EF Core Migrations)
+- **Etapa/Funcionalidade:** Geração e aplicação de migração (`AddNewResumeFields`) para alinhar a base de dados SQL Server com a nova entidade de Domínio.
+- **Decisão Técnica e Motivação:** Durante os testes E2E, as chamadas HTTP `GET` e `POST` falharam com `HTTP 500 Internal Server Error` motivado por uma `DbUpdateException`. O Entity Framework não conseguiu mapear os novos atributos (`AreaOfInterest`, `ProfessionalSummary`) porque a estrutura física da tabela `Resumes` não havia sido atualizada após a refatoração do domínio.
+- **Participação da IA:** Analisou os logs de erro fornecidos e as capturas do separador de Network, diagnosticando imediatamente a ausência da migration.
+- **Adaptações e Correções:** Execução dos comandos `dotnet ef migrations add` e `dotnet ef database update`.
+- **Verificação:** Teste manual de ponta a ponta (E2E) no *browser*, confirmando a resposta `200 OK` na listagem e `201 Created` na submissão de um novo currículo.
+- **Limitações Conhecidas:** Se houvessem dados pré-existentes que violassem as novas regras de negócio (ex: registos antigos com `Email` nulo), a aplicação do `update` poderia falhar, exigindo tratamento de dados legados no ficheiro da migration.
+
+## Bloco 28.1: Correção de Restrição SQL (MakePdfContentNullable)
+- **Etapa/Funcionalidade:** Ajuste explícito de nulidade na coluna `PdfContent` via Entity Framework Core e aplicação de nova migração.
+- **Decisão Técnica e Motivação:** Os testes E2E manuais revelaram uma falha de submissão (HTTP 500). Os logs do SQL Server indicaram uma violação de restrição `NOT NULL` (`SqlException 0x80131904`). Embora a entidade de Domínio (`Resume.cs`) tenha sido atualizada para `byte[]?`, a tabela do banco de dados ainda exigia o artefato. A correção envolveu declarar `.IsRequired(false)` via Fluent API no `DbContext` e propagar a alteração (`AlterColumn`) via migrations.
+- **Participação da IA:** Analisou a *stack trace* fornecida, identificou a discrepância entre o modelo de memória e o esquema relacional, e orientou a execução dos comandos corretivos do EF Core.
+- **Adaptações e Correções:** Execução de nova migração focada exclusivamente na alteração de nulidade da coluna de PDF.
+- **Verificação:** Execução de teste manual E2E de submissão de formulário sem anexo, validando a ausência de exceções `DbUpdateException` e o retorno de sucesso na API.
+- **Limitações Conhecidas:** Nenhuma. O banco de dados agora suporta a arquitetura de persistência sem arquivo.

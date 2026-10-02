@@ -29,7 +29,7 @@ public class ResumeDbContext : DbContext
                   
             // byte[] mapeia automaticamente para varbinary(max) no SQL Server
             entity.Property(e => e.PdfContent)
-                  .IsRequired(); 
+                  .IsRequired(false); 
         });
     }
 }
