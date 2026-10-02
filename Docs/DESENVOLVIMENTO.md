@@ -176,3 +176,35 @@
 - **Adaptações e Correções:** O método do repositório, por agora, carrega a entidade completa em memória antes do mapeamento. Se a base de dados crescer substancialmente, um *Refactor* futuro projetará (via `.Select()`) diretamente no EF Core para não fazer fetch aos bytes do banco.
 - **Verificação:** Execução de `dotnet test`. O Vitest/xUnit confirmou o fluxo de dependências, verificando a projeção correta dos nomes e assegurando que o repositório é invocado apenas uma vez.
 - **Limitações Conhecidas:** A query atual `.ToListAsync()` faz o *fetch* de todas as colunas do SQL Server (incluindo os binários). O mapeamento ocorre em memória no backend. Para tabelas massivas, isto será um gargalo de performance no banco de dados e precisará de refatoração para projeção IQueryable nativa.
+
+## Bloco 20: Endpoint de Listagem na API (TDD - Fase Green)
+- **Etapa/Funcionalidade:** Implementação do endpoint `GET /api/resumes` no `ResumesController`.
+- **Decisão Técnica e Motivação:** O controller é mantido anémico (Thin Controller), existindo apenas para receber o pedido HTTP, invocar o caso de uso e devolver a resposta formatada (HTTP 200 OK com JSON). A separação de responsabilidades assegura que regras de negócio não "vazam" para a camada de apresentação.
+- **Participação da IA:** Forneceu a refatoração do construtor no teste unitário e no Controller para suportar múltiplas dependências sem quebrar os cenários de teste existentes de Upload.
+- **Adaptações e Correções:** O método de Upload anterior não necessitou de alterações de lógica, apenas de adaptação na orquestração da injeção de dependências durante os testes.
+- **Verificação:** Executado `dotnet test`. A asserção comprovou que o método `Get()` devolve um tipo `OkObjectResult` contendo o formato correto de `IEnumerable<ResumeDto>`.
+- **Limitações Conhecidas:** A listagem atual traz todos os registos da base de dados de uma só vez. Para sistemas com elevado volume de dados, será imperativo implementar parâmetros de paginação (`?page=1&size=10`) no futuro.
+
+## Bloco 20.1: Refatoração do Teste e Controller de Upload (Correção de TDD)
+- **Etapa/Funcionalidade:** Restauração das asserções originais de DTO no teste unitário do Endpoint de Upload e alinhamento do retorno HTTP.
+- **Decisão Técnica e Motivação:** Retornar o ID e os dados parseados do currículo após o upload (em vez de uma simples string) é útil para que o frontend possa, por exemplo, redirecionar o utilizador para a página de detalhes daquele registo específico sem precisar efetuar um novo `GET` imediato. A simulação do `IFormCollection` no teste manteve a integridade do teste unitário face ao novo comportamento do modelo de binding do ASP.NET.
+- **Participação da IA:** Adaptou o teste original que exigia o retorno dos dados da entidade mascarados, corrigindo as inconsistências de assinatura apontadas pelo compilador.
+- **Adaptações e Correções:** O método `Upload` no Controller foi modificado para devolver um objeto anónimo que serve como DTO de saída, satisfazendo a asserção `BeEquivalentTo` do teste restaurado.
+- **Verificação:** Executado `dotnet test`. O mock interceptou o envio do `FormCollection` e garantiu que a resposta HTTP 201 incluía os campos extraídos do PDF (Email e Telefone) omitindo o array binário.
+- **Limitações Conhecidas:** Nenhuma aplicável.
+
+## Bloco 20.2: Restauração da Assinatura do Controller e Validações HTTP
+- **Etapa/Funcionalidade:** Reversão da assinatura do endpoint de Upload para `([FromForm] string name, [FromForm] IFormFile file)` e reintegração das validações rígidas de tamanho (5MB) e formato (PDF).
+- **Decisão Técnica e Motivação:** A injeção direta de `IFormFile` e tipos primitivos via `[FromForm]` é mais idiomática e legível do que manipular `IFormCollection`. Validar o `ContentType` e o `Length` diretamente no Controller atua como uma barreira de segurança de primeira linha (*fail-fast*), poupando a camada de Domínio de processar *streams* inválidas e alinhando o comportamento com as restrições já aplicadas no frontend (Zod).
+- **Participação da IA:** A IA havia removido as validações durante um *refactor* no teste. O desenvolvedor interveio e solicitou a restauração das regras de negócio (5MB e ContentType).
+- **Adaptações e Correções:** O código do Controller foi atualizado para utilizar o padrão `ProblemDetails` nas mensagens de retorno das validações, mantendo a padronização das respostas de erro da API.
+- **Verificação:** Executado `dotnet test`. O teste que passa instâncias *mockadas* de `IFormFile` compilou e passou sem necessitar do *wrapper* complexo de `FormCollection`.
+- **Limitações Conhecidas:** A validação de `ContentType` baseia-se no MIME type enviado pelo cliente no *header* do *multipart*, o que pode ser forjado. Para uma segurança blindada, seria necessária uma inspeção dos *magic numbers* (cabeçalho hexadecimal) do ficheiro, mas a biblioteca extratora (PdfPig) rejeitará ficheiros corrompidos nas camadas inferiores.
+
+## Bloco 20.3: Alinhamento Final do Teste de Upload
+- **Etapa/Funcionalidade:** Ajuste da chamada do método `Upload` no teste unitário `ResumesControllerTests`.
+- **Decisão Técnica e Motivação:** Como a assinatura do endpoint retornou para a injeção limpa de parâmetros (`string name, IFormFile file`), a simulação via `FormCollection` tornou-se obsoleta e causava erro de compilação (CS7036). O teste foi simplificado para injetar os *mocks* diretamente, melhorando a legibilidade.
+- **Participação da IA:** Analisou a imagem do erro de compilação e forneceu o código do teste refatorado para bater com a assinatura correta do Controller.
+- **Adaptações e Correções:** Remoção das classes `FormCollection` e `FormFileCollection` do bloco *Arrange* do teste.
+- **Verificação:** Execução do `dotnet test`. O teste passou, validando a integridade da API.
+- **Limitações Conhecidas:** Nenhuma. O teste está agora altamente coeso com a implementação.
