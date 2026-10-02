@@ -296,3 +296,27 @@
 - **Adaptações e Correções:** O método `Parse` do Controller foi implementado de forma assíncrona para gerir a leitura da *stream* do `IFormFile`, invocando em seguida o UseCase de forma síncrona.
 - **Verificação:** Execução do `dotnet test`. O teste parametrizado interceptou o `IFormFile` simulado e validou com sucesso a devolução do `ParsedResumeDto`.
 - **Limitações Conhecidas:** Nenhuma. O endpoint está robusto e pronto para ser consumido pelo React.
+
+## Bloco 25: Refatoração do Formulário React (Zod + Autofill)
+- **Etapa/Funcionalidade:** Implementação da nova UI `ResumeForm.tsx` com React Hook Form e Zod. Inclusão dos campos de Área e Resumo, além do gatilho `onChange` no input file para acionar o motor de parse do backend.
+- **Decisão Técnica e Motivação:** A arquitetura do formulário foi dividida em dois fluxos assíncronos distintos. O primeiro (`handlePdfUpload`) interceta a seleção do ficheiro, envia para a API via `multipart/form-data` e preenche os inputs utilizando a função `setValue`. O segundo (`onSubmit`) gere o estado final da submissão manual, validando via Zod (nome e e-mail obrigatórios) e comunicando via JSON puro. O erro no carregamento do PDF foi classificado como *non-blocking*, permitindo o seguimento manual.
+- **Participação da IA:** Forneceu a implementação completa do componente respeitando a Fase Red anterior, configurando a orquestração do Axios e a estruturação dos retornos de UX.
+- **Adaptações e Correções:** O input de PDF perdeu a sua ligação ao `react-hook-form` (`...register`), passando a ser um input de HTML gerido por um `onChange` dedicado.
+- **Verificação:** Execução do `npm run test`. A suíte validou o isolamento entre o envio de FormData para `/parse` e JSON para `/`.
+- **Limitações Conhecidas:** A lista de currículos abaixo do formulário não é atualizada instantaneamente após o sucesso do POST. Será necessária uma gestão de estado partilhada (Lifting State Up) ou uso de Context/React Query no futuro.
+
+## Bloco 25.1: Correção de Constantes e Ajuste de Tipagem/Testes no Frontend
+- **Etapa/Funcionalidade:** Resolução de erro de compilação TS2367 e ajuste nas validações para aprovação integral da suíte de testes do `ResumeForm`.
+- **Decisão Técnica e Motivação:** A reintegração das constantes `MAX_FILE_SIZE` e `ACCEPTED_FILE_TYPES` resultou num conflito de tipos (tentativa de comparar `string` com `string[]`). A correção adotou o método estrito `.includes()` do JavaScript. Além disso, a ordem das validações na schema do Zod foi invertida (`.min(1)` antes de `.email()`) para garantir que o erro de obrigatoriedade sobreponha o erro de formato inválido em casos de submissões vazias, satisfazendo as asserções de UX. Por fim, retificou-se o tipo MIME de envio na submissão final que estava acidentalmente injetando a constante de PDF num payload que deveria ser JSON.
+- **Participação da IA:** Analisou as logs de erro do Vitest e do TypeScript (via screenshot), dissecando o desfasamento entre os argumentos submetidos pelo Axios e os esperados pelos testes.
+- **Adaptações e Correções:** Alteração do cabeçalho de submissão para `'Content-Type': 'application/json'`.
+- **Verificação:** Execução de `npm run test`, devendo resultar na aprovação integral dos 3 testes outrora falhados.
+- **Limitações Conhecidas:** Nenhuma aplicável.
+
+## Bloco 26: Implementação do Cadastro via JSON (CreateResumeUseCase)
+- **Etapa/Funcionalidade:** Criação do `CreateResumeRequestDto` e do `CreateResumeUseCase` para suportar o cadastro de currículos sem dependência de upload de ficheiros.
+- **Decisão Técnica e Motivação:** Para alinhar o backend com a nova arquitetura do frontend (onde o PDF serve apenas para autofill), o fluxo de criação foi isolado num caso de uso que recebe um DTO estruturado via JSON. Isto simplifica a API e remove a sobrecarga de lidar com MultipartFormData na persistência principal.
+- **Participação da IA:** Forneceu a implementação do Caso de Uso e do DTO para satisfazer o teste em Fase Red, além de atualizar o contentor de injeção de dependências.
+- **Adaptações e Correções:** O construtor da entidade `Resume` é instanciado injetando `null` explicitamente no parâmetro `pdfContent`.
+- **Verificação:** Execução do `dotnet test` confirmando o sucesso da integração entre o UseCase e o repositório em memória mockado (`NSubstitute`).
+- **Limitações Conhecidas:** Nenhuma.

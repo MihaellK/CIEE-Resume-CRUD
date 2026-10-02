@@ -16,7 +16,7 @@ builder.Services.AddScoped<IResumeRepository, ResumeRepository>();
 
 // Injeção de Dependências (Aplicação)
 builder.Services.AddScoped<IPdfTextExtractor, PdfTextExtractorService>();
-builder.Services.AddScoped<IUploadResumeUseCase, UploadResumeUseCase>();
+builder.Services.AddScoped<ICreateResumeUseCase, CreateResumeUseCase>();
 builder.Services.AddScoped<IGetResumesUseCase, GetResumesUseCase>();
 builder.Services.AddScoped<IParseResumeUseCase, ParseResumeUseCase>();
 builder.Services.AddScoped<IResumeParserService, ResumeParserService>();
