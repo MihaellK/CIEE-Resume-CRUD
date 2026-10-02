@@ -1,122 +1,80 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest'; // Correção: 'vi' adicionado à importação
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import axios from 'axios';
 import ResumeForm from './ResumeForm';
 
-// Dizemos ao Vitest para interceptar todas as chamadas do módulo axios
 vi.mock('axios');
 
-describe('ResumeForm Component', () => {
-  it('Should display validation error when name is empty and form is submitted', async () => {
-    // Arrange
+describe('ResumeForm Component - Novos Requisitos', () => {
+  const mockedAxios = vi.mocked(axios);
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('Deve exibir erro de validação se Nome e Email estiverem vazios na submissão manual', async () => {
     render(<ResumeForm />);
     
-    // Act
-    const submitButton = screen.getByRole('button', { name: /enviar/i });
+    const submitButton = screen.getByRole('button', { name: /salvar currículo/i });
     fireEvent.click(submitButton);
 
-    // Assert
     await waitFor(() => {
-      expect(screen.getByText(/O nome do candidato é obrigatório/i)).toBeInTheDocument();
+      expect(screen.getByText(/O nome.*obrigatório/i)).toBeInTheDocument();
+      expect(screen.getByText(/O e-mail.*obrigatório/i)).toBeInTheDocument();
     });
   });
 
-  // Fase Red para o Arquivo PDF
-  it('Should display validation error when PDF file is not selected', async () => {
-    // Arrange
+  it('Deve enviar os dados corretamente (sem PDF) para a API principal (Cadastro Manual)', async () => {
+    mockedAxios.post.mockResolvedValueOnce({ data: { id: '123' } });
     render(<ResumeForm />);
     
-    // Preenchemos o nome para isolar o erro do ficheiro
-    const nameInput = screen.getByLabelText(/nome do candidato/i);
-    fireEvent.change(nameInput, { target: { value: 'Mihaell Alves' } });
+    fireEvent.change(screen.getByLabelText(/nome completo/i), { target: { value: 'Mihaell Alves' } });
+    fireEvent.change(screen.getByLabelText(/e-mail/i), { target: { value: 'mihaell@teste.com' } });
+    fireEvent.change(screen.getByLabelText(/área ou cargo/i), { target: { value: 'Engenharia' } });
     
-    // Act - Tentamos submeter sem selecionar o ficheiro PDF
-    const submitButton = screen.getByRole('button', { name: /enviar/i });
-    fireEvent.click(submitButton);
+    fireEvent.click(screen.getByRole('button', { name: /salvar currículo/i }));
 
-    // Assert
     await waitFor(() => {
-      expect(screen.getByText(/O currículo em PDF é obrigatório/i)).toBeInTheDocument();
-    });
-  });
-
-  it('Should display validation error when file is not a PDF', async () => {
-    render(<ResumeForm />);
-    
-    // Preenchemos o nome validamente
-    const nameInput = screen.getByLabelText(/nome do candidato/i);
-    fireEvent.change(nameInput, { target: { value: 'Mihaell Alves' } });
-    
-    // Act - Simulamos o upload de um ficheiro com extensão e MIME type incorretos (exemplo imagem ou txt)
-    const fileInput = screen.getByLabelText(/currículo \(pdf\)/i);
-    const invalidFile = new File(['conteudo de texto'], 'testoInvalido.txt', { type: 'text/plain' });
-    fireEvent.change(fileInput, { target: { files: [invalidFile] } });
-
-    const submitButton = screen.getByRole('button', { name: /enviar/i });
-    fireEvent.click(submitButton);
-
-    // Assert
-    await waitFor(() => {
-      expect(screen.getByText(/O ficheiro deve ser um PDF/i)).toBeInTheDocument();
-    });
-  });
-
-  it('Should display validation error when file exceeds 5MB', async () => {
-    render(<ResumeForm />);
-    
-    const nameInput = screen.getByLabelText(/nome do candidato/i);
-    fireEvent.change(nameInput, { target: { value: 'Mihaell Alves' } });
-    
-    // Act - Simulamos um ficheiro PDF pesado (6MB) manipulando a propriedade size do objeto File
-    const fileInput = screen.getByLabelText(/currículo \(pdf\)/i);
-    const largeFile = new File(['conteudo dummy'], 'curriculo_pesado.pdf', { type: 'application/pdf' });
-    Object.defineProperty(largeFile, 'size', { value: 6 * 1024 * 1024 }); 
-    
-    fireEvent.change(fileInput, { target: { files: [largeFile] } });
-
-    const submitButton = screen.getByRole('button', { name: /enviar/i });
-    fireEvent.click(submitButton);
-
-    // Assert
-    await waitFor(() => {
-      expect(screen.getByText(/O ficheiro não pode exceder 5MB/i)).toBeInTheDocument();
-    });
-  });
-
-  // Fase Red para a integração com a API
-  it('Should call the API with FormData when valid data is submitted', async () => {
-    // Arrange
-    const mockedAxios = vi.mocked(axios);
-    mockedAxios.post.mockResolvedValueOnce({ data: { id: '123', name: 'Mihaell Alves' } });
-
-    render(<ResumeForm />);
-    
-    const nameInput = screen.getByLabelText(/nome do candidato/i);
-    fireEvent.change(nameInput, { target: { value: 'Mihaell Alves' } });
-    
-    const fileInput = screen.getByLabelText(/currículo \(pdf\)/i);
-    const validFile = new File(['dummy content'], 'curriculo.pdf', { type: 'application/pdf' });
-    fireEvent.change(fileInput, { target: { files: [validFile] } });
-
-    // Act
-    const submitButton = screen.getByRole('button', { name: /enviar/i });
-    fireEvent.click(submitButton);
-
-    // Assert
-    await waitFor(() => {
-      const expectedUrl = import.meta.env.VITE_API_URL || 'http://localhost:5092/api/resumes/upload';
-
-      // Verifica se o axios.post foi chamado exatamente 1 vez
       expect(mockedAxios.post).toHaveBeenCalledTimes(1);
-      
-      // Verifica se a chamada foi feita para o endpoint correto e com FormData
+      // Agora esperamos que o submit envie JSON e não FormData, pois o PDF não vai para o BD
       expect(mockedAxios.post).toHaveBeenCalledWith(
-        expectedUrl,
-        expect.any(FormData),
+        expect.stringContaining('/api/resumes'),
         expect.objectContaining({
-          headers: { 'Content-Type': 'multipart/form-data' }
+          name: 'Mihaell Alves',
+          email: 'mihaell@teste.com',
+          areaOfInterest: 'Engenharia'
+        }),
+        expect.objectContaining({
+          headers: { 'Content-Type': 'application/json' }
         })
       );
     });
+  });
+
+  it('Deve chamar o endpoint /parse e preencher os inputs ao fazer upload de um PDF (Autofill)', async () => {
+    // Simulamos a resposta do backend de extração
+    mockedAxios.post.mockResolvedValueOnce({ 
+      data: { name: 'João Extraído', email: 'joao@extraido.com', phone: '11999999999' } 
+    });
+
+    render(<ResumeForm />);
+    
+    const fileInput = screen.getByLabelText(/fazer upload de currículo \(pdf autofill\)/i);
+    const validFile = new File(['dummy'], 'curriculo.pdf', { type: 'application/pdf' });
+    
+    // Ao inserir o ficheiro, o evento deve disparar a chamada à API de parse imediatamente
+    fireEvent.change(fileInput, { target: { files: [validFile] } });
+
+    await waitFor(() => {
+      expect(mockedAxios.post).toHaveBeenCalledWith(
+        expect.stringContaining('/api/resumes/parse'),
+        expect.any(FormData),
+        expect.objectContaining({ headers: { 'Content-Type': 'multipart/form-data' } })
+      );
+    });
+
+    // Verifica se os inputs foram preenchidos (Autofill)
+    expect(screen.getByLabelText(/nome completo/i)).toHaveValue('João Extraído');
+    expect(screen.getByLabelText(/e-mail/i)).toHaveValue('joao@extraido.com');
   });
 });
