@@ -168,3 +168,11 @@
 - **Adaptações e Correções:** O prefixo do URL no frontend foi alterado de `https` para `http`.
 - **Verificação:** Execução manual. Após alinhamento, o envio do `FormData` resultou numa conexão bem-sucedida (Status 201).
 - **Limitações Conhecidas:** Num ambiente de produção, tanto o frontend como a API devem obrigatoriamente operar sob HTTPS para garantir a encriptação do tráfego (dados sensíveis do currículo).
+
+## Bloco 19: Caso de Uso de Listagem de Currículos (TDD - Fase Green)
+- **Etapa/Funcionalidade:** Implementação do `GetResumesUseCase`, criação do `ResumeDto` e extensão do `IResumeRepository` para suportar a listagem.
+- **Decisão Técnica e Motivação:** A introdução do `ResumeDto` é fundamental na listagem. Retornar a entidade de domínio completa (`Resume`) implicaria trafegar o array de bytes (`PdfContent`) de todos os registos na resposta JSON, o que causaria um esgotamento severo de largura de banda e memória. A separação garante que a listagem seja leve.
+- **Participação da IA:** Forneceu a modelação do DTO via `record` para imutabilidade e a implementação limpa do mapeamento no serviço de aplicação, juntamente com a instrução do Entity Framework (`OrderByDescending`) para ordenação natural cronológica.
+- **Adaptações e Correções:** O método do repositório, por agora, carrega a entidade completa em memória antes do mapeamento. Se a base de dados crescer substancialmente, um *Refactor* futuro projetará (via `.Select()`) diretamente no EF Core para não fazer fetch aos bytes do banco.
+- **Verificação:** Execução de `dotnet test`. O Vitest/xUnit confirmou o fluxo de dependências, verificando a projeção correta dos nomes e assegurando que o repositório é invocado apenas uma vez.
+- **Limitações Conhecidas:** A query atual `.ToListAsync()` faz o *fetch* de todas as colunas do SQL Server (incluindo os binários). O mapeamento ocorre em memória no backend. Para tabelas massivas, isto será um gargalo de performance no banco de dados e precisará de refatoração para projeção IQueryable nativa.

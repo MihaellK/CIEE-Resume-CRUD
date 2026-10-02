@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using ResumeCrud.API.Domain.Entities;
 using ResumeCrud.API.Domain.Repositories;
 using ResumeCrud.API.Infrastructure.Data;
@@ -17,5 +18,12 @@ public class ResumeRepository : IResumeRepository
     {
         await _context.Resumes.AddAsync(resume);
         await _context.SaveChangesAsync();
+    }
+
+    public async Task<IEnumerable<Resume>> GetAllAsync()
+    {
+        return await _context.Resumes
+            .OrderByDescending(r => r.Id) // Mais recentes primeiro
+            .ToListAsync();
     }
 }
