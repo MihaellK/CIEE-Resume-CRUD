@@ -26,4 +26,10 @@ public class ResumeRepository : IResumeRepository
             .OrderByDescending(r => r.Id) // Mais recentes primeiro
             .ToListAsync();
     }
+
+    public async Task<Resume?> GetByIdAsync(Guid id)
+    {
+        return await _context.Resumes.FirstOrDefaultAsync(r => r.Id == id);
+    }
+    
 }

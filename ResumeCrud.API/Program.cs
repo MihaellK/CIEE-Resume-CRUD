@@ -20,6 +20,7 @@ builder.Services.AddScoped<ICreateResumeUseCase, CreateResumeUseCase>();
 builder.Services.AddScoped<IGetResumesUseCase, GetResumesUseCase>();
 builder.Services.AddScoped<IParseResumeUseCase, ParseResumeUseCase>();
 builder.Services.AddScoped<IResumeParserService, ResumeParserService>();
+builder.Services.AddScoped<IGetResumeByIdUseCase, GetResumeByIdUseCase>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

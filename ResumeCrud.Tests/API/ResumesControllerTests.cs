@@ -18,6 +18,7 @@ public class ResumesControllerTests
         var createUseCaseMock = Substitute.For<ICreateResumeUseCase>();
         var getUseCaseMock = Substitute.For<IGetResumesUseCase>();
         var parseUseCaseMock = Substitute.For<IParseResumeUseCase>();
+        var getByIdUseCaseMock = Substitute.For<IGetResumeByIdUseCase>(); 
 
         var requestDto = new CreateResumeRequestDto
         {
@@ -31,7 +32,7 @@ public class ResumesControllerTests
         
         createUseCaseMock.ExecuteAsync(requestDto).Returns(expectedResume);
 
-        var controller = new ResumesController(createUseCaseMock, getUseCaseMock, parseUseCaseMock);
+        var controller = new ResumesController(createUseCaseMock, getUseCaseMock, parseUseCaseMock, getByIdUseCaseMock);
 
         // Act
         var result = await controller.Create(requestDto);
@@ -57,6 +58,7 @@ public class ResumesControllerTests
         var createUseCaseMock = Substitute.For<ICreateResumeUseCase>();
         var getUseCaseMock = Substitute.For<IGetResumesUseCase>();
         var parseUseCaseMock = Substitute.For<IParseResumeUseCase>();
+        var getByIdUseCaseMock = Substitute.For<IGetResumeByIdUseCase>(); 
 
         var mockResumes = new List<ResumeDto>
         {
@@ -66,7 +68,7 @@ public class ResumesControllerTests
 
         getUseCaseMock.ExecuteAsync().Returns(mockResumes);
 
-        var controller = new ResumesController(createUseCaseMock, getUseCaseMock, parseUseCaseMock);
+        var controller = new ResumesController(createUseCaseMock, getUseCaseMock, parseUseCaseMock, getByIdUseCaseMock);
 
         // Act
         var result = await controller.Get();
@@ -86,6 +88,7 @@ public class ResumesControllerTests
         var createUseCaseMock = Substitute.For<ICreateResumeUseCase>();
         var getUseCaseMock = Substitute.For<IGetResumesUseCase>();
         var parseUseCaseMock = Substitute.For<IParseResumeUseCase>();
+        var getByIdUseCaseMock = Substitute.For<IGetResumeByIdUseCase>(); 
 
         var fakeBytes = new byte[] { 1, 2, 3 };
         var expectedDto = new ParsedResumeDto { Name = "João Silva", Email = "joao@teste.com" };
@@ -100,7 +103,7 @@ public class ResumesControllerTests
         var ms = new MemoryStream(fakeBytes);
         mockFile.OpenReadStream().Returns(ms);
 
-        var controller = new ResumesController(createUseCaseMock, getUseCaseMock, parseUseCaseMock);
+        var controller = new ResumesController(createUseCaseMock, getUseCaseMock, parseUseCaseMock, getByIdUseCaseMock);
 
         // Act
         var result = await controller.Parse(mockFile);
@@ -108,5 +111,60 @@ public class ResumesControllerTests
         // Assert
         var okResult = result.Should().BeOfType<OkObjectResult>().Subject;
         okResult.Value.Should().BeEquivalentTo(expectedDto);
+    }
+
+    [Fact]
+    public async Task GetById_ShouldReturnOkWithResume_WhenResumeExists()
+    {
+        // Arrange
+        var createUseCaseMock = Substitute.For<ICreateResumeUseCase>();
+        var getUseCaseMock = Substitute.For<IGetResumesUseCase>();
+        var parseUseCaseMock = Substitute.For<IParseResumeUseCase>();
+        var getByIdUseCaseMock = Substitute.For<IGetResumeByIdUseCase>(); 
+
+        var targetId = Guid.NewGuid();
+        var expectedResume = new Resume("Mihaell Alves", "email@teste.com", "11999999999", "Engenharia", "Resumo", null);
+        
+        getByIdUseCaseMock.ExecuteAsync(targetId).Returns(expectedResume);
+
+        var controller = new ResumesController(createUseCaseMock, getUseCaseMock, parseUseCaseMock, getByIdUseCaseMock);
+
+        // Act
+        var result = await controller.GetById(targetId);
+
+        // Assert
+        var okResult = result.Should().BeOfType<OkObjectResult>().Subject;
+        
+        // Comparar com um objeto anónimo mapeado, igual ao Controller
+        okResult.Value.Should().BeEquivalentTo(new 
+        {
+            expectedResume.Id,
+            expectedResume.Name,
+            expectedResume.Email,
+            expectedResume.Phone,
+            expectedResume.AreaOfInterest,
+            expectedResume.ProfessionalSummary
+        }); 
+    }
+
+    [Fact]
+    public async Task GetById_ShouldReturnNotFound_WhenResumeDoesNotExist()
+    {
+        // Arrange
+        var createUseCaseMock = Substitute.For<ICreateResumeUseCase>();
+        var getUseCaseMock = Substitute.For<IGetResumesUseCase>();
+        var parseUseCaseMock = Substitute.For<IParseResumeUseCase>();
+        var getByIdUseCaseMock = Substitute.For<IGetResumeByIdUseCase>();
+
+        var targetId = Guid.NewGuid();
+        getByIdUseCaseMock.ExecuteAsync(targetId).Returns((Resume?)null); // Retorna nulo
+
+        var controller = new ResumesController(createUseCaseMock, getUseCaseMock, parseUseCaseMock, getByIdUseCaseMock);
+
+        // Act
+        var result = await controller.GetById(targetId);
+
+        // Assert
+        result.Should().BeOfType<NotFoundResult>();
     }
 }

@@ -344,3 +344,27 @@
 - **Adaptações e Correções:** Execução de nova migração focada exclusivamente na alteração de nulidade da coluna de PDF.
 - **Verificação:** Execução de teste manual E2E de submissão de formulário sem anexo, validando a ausência de exceções `DbUpdateException` e o retorno de sucesso na API.
 - **Limitações Conhecidas:** Nenhuma. O banco de dados agora suporta a arquitetura de persistência sem arquivo.
+
+## Bloco 29: Caso de Uso de Detalhes do Currículo (GetById)
+- **Etapa/Funcionalidade:** Expansão do `IResumeRepository` com o método `GetByIdAsync` e criação do caso de uso `GetResumeByIdUseCase`.
+- **Decisão Técnica e Motivação:** Para permitir a visualização detalhada de um candidato no frontend, foi necessária a implementação de uma leitura indexada. Optou-se por retornar nullable (`Resume?`) no repositório e no caso de uso, delegando a responsabilidade de retornar `HTTP 404 Not Found` para a camada de apresentação (Controller), mantendo a camada de aplicação puramente lógica.
+- **Participação da IA:** Forneceu a implementação TDD completa (da Fase Red à Fase Green), incluindo o contrato no repositório, consulta no EF Core e a classe do UseCase.
+- **Adaptações e Correções:** O método do EF Core utilizou `FirstOrDefaultAsync` em vez de `FindAsync` para manter consistência e flexibilidade em futuras validações (ex: filtros de *soft delete*).
+- **Verificação:** Execução de `dotnet test` no `GetResumeByIdUseCaseTests`, validando o retorno de dados esperados e o tratamento de IDs inexistentes via mocks do `NSubstitute`.
+- **Limitações Conhecidas:** Nenhuma.
+
+## Bloco 30: Endpoint de Detalhes do Currículo (`GET /api/resumes/{id}`)
+- **Etapa/Funcionalidade:** Implementação do endpoint RESTful para buscar os detalhes de um currículo específico pelo seu ID no `ResumesController`.
+- **Decisão Técnica e Motivação:** O frontend precisa de uma rota dedicada para exibir a tela de detalhes de um candidato. Seguindo o padrão HTTP, o endpoint mapeia um GET com o parâmetro de rota `{id}`. Foi implementado o tratamento de exceção de negócio para garantir a devolução do status code `404 Not Found` quando o GUID solicitado não existe na base de dados, respeitando as boas práticas de construção de APIs.
+- **Participação da IA:** Forneceu a estrutura TDD completa, iniciando pelos testes de Controller (Fase Red) mockando as chamadas, e culminando na refatoração do Controlador (Fase Green) para incluir a injeção do `IGetResumeByIdUseCase`.
+- **Adaptações e Correções:** O retorno do endpoint mapeia a entidade para um DTO anónimo garantindo que apenas as informações necessárias cheguem ao cliente, e nunca dados sensíveis não requisitados (como o antigo array de bytes do PDF, se estivesse lá).
+- **Verificação:** Execução do `dotnet test`. A suíte `ResumesControllerTests` validou com sucesso as asserções de `OkObjectResult` e `NotFoundResult`.
+- **Limitações Conhecidas:** Nenhuma. A API está completa para as necessidades atuais de leitura.
+
+## Bloco 30.1: Correção de Asserção no Teste do Endpoint GetById
+- **Etapa/Funcionalidade:** Ajuste do FluentAssertions no teste `GetById_ShouldReturnOkWithResume_WhenResumeExists`.
+- **Decisão Técnica e Motivação:** O teste falhava na comparação de equivalência (`BeEquivalentTo`) porque esperava o retorno da entidade completa (`Resume`), enquanto o Controller foi intencionalmente desenhado para omitir dados internos (`CreatedAt`, `PdfContent`) usando um objeto anónimo. A asserção foi ajustada para espelhar o contrato exato da API, garantindo segurança na exposição de dados.
+- **Participação da IA:** Analisou o output de erro do xUnit e corrigiu a asserção no ficheiro de testes do Controller.
+- **Adaptações e Correções:** Injeção manual do UseCase em todos os testes parametrizados pelo desenvolvedor para garantir a compilação do construtor.
+- **Verificação:** Execução de `dotnet test` com 100% de sucesso.
+- **Limitações Conhecidas:** Nenhuma.

@@ -11,18 +11,21 @@ public class ResumesController : ControllerBase
     private readonly ICreateResumeUseCase _createResumeUseCase;
     private readonly IGetResumesUseCase _getResumesUseCase;
     private readonly IParseResumeUseCase _parseResumeUseCase;
+    private readonly IGetResumeByIdUseCase _getResumeByIdUseCase; // 1. Nova dependência
 
     public ResumesController(
         ICreateResumeUseCase createResumeUseCase,
         IGetResumesUseCase getResumesUseCase,
-        IParseResumeUseCase parseResumeUseCase)
+        IParseResumeUseCase parseResumeUseCase,
+        IGetResumeByIdUseCase getResumeByIdUseCase) // 2. Injeção no construtor
     {
         _createResumeUseCase = createResumeUseCase;
         _getResumesUseCase = getResumesUseCase;
         _parseResumeUseCase = parseResumeUseCase;
+        _getResumeByIdUseCase = getResumeByIdUseCase;
     }
 
-    // NOVO ENDPOINT DE CRIAÇÃO (JSON)
+    // ENDPOINT DE CRIAÇÃO (JSON)
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateResumeRequestDto request)
     {
@@ -37,7 +40,7 @@ public class ResumesController : ControllerBase
             resume.AreaOfInterest,
             resume.ProfessionalSummary
         };
-
+        
         // Retorna HTTP 201 Created
         return Created(string.Empty, response);
     }
@@ -62,6 +65,30 @@ public class ResumesController : ControllerBase
     {
         var resumes = await _getResumesUseCase.ExecuteAsync();
         return Ok(resumes);
+    }
+
+    // 3. NOVO ENDPOINT: Busca por ID
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetById(Guid id)
+    {
+        var resume = await _getResumeByIdUseCase.ExecuteAsync(id);
+
+        if (resume == null)
+        {
+            return NotFound(); // Retorna 404 se não existir
+        }
+
+        var response = new
+        {
+            resume.Id,
+            resume.Name,
+            resume.Email,
+            resume.Phone,
+            resume.AreaOfInterest,
+            resume.ProfessionalSummary
+        };
+
+        return Ok(response); // Retorna 200 com os dados
     }
 
     private IActionResult? ValidatePdfFile(IFormFile file)

@@ -6,4 +6,5 @@ public interface IResumeRepository
 {
     Task AddAsync(Resume resume);
     Task<IEnumerable<Resume>> GetAllAsync(); 
+    Task<Resume?> GetByIdAsync(Guid id);
 }
