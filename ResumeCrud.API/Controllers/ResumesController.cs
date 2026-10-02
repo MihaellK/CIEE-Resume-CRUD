@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using ResumeCrud.API.Application.DTOs;
 using ResumeCrud.API.Application.Services;
 
 namespace ResumeCrud.API.Controllers;
@@ -7,44 +8,40 @@ namespace ResumeCrud.API.Controllers;
 [Route("api/[controller]")]
 public class ResumesController : ControllerBase
 {
-    private readonly IUploadResumeUseCase _uploadResumeUseCase;
+    private readonly ICreateResumeUseCase _createResumeUseCase;
     private readonly IGetResumesUseCase _getResumesUseCase;
     private readonly IParseResumeUseCase _parseResumeUseCase;
 
     public ResumesController(
-        IUploadResumeUseCase uploadResumeUseCase,
+        ICreateResumeUseCase createResumeUseCase,
         IGetResumesUseCase getResumesUseCase,
-        IParseResumeUseCase parseResumeUseCase) // Nova injeção
+        IParseResumeUseCase parseResumeUseCase)
     {
-        _uploadResumeUseCase = uploadResumeUseCase;
+        _createResumeUseCase = createResumeUseCase;
         _getResumesUseCase = getResumesUseCase;
         _parseResumeUseCase = parseResumeUseCase;
     }
 
-    [HttpPost("upload")]
-    public async Task<IActionResult> Upload([FromForm] string name, [FromForm] IFormFile file)
+    // NOVO ENDPOINT DE CRIAÇÃO (JSON)
+    [HttpPost]
+    public async Task<IActionResult> Create([FromBody] CreateResumeRequestDto request)
     {
-        var validationError = ValidatePdfFile(file);
-        if (validationError != null) return validationError;
-
-        using var memoryStream = new MemoryStream();
-        await file.CopyToAsync(memoryStream);
-        var pdfBytes = memoryStream.ToArray();
-
-        var resume = await _uploadResumeUseCase.ExecuteAsync(name, pdfBytes);
+        var resume = await _createResumeUseCase.ExecuteAsync(request);
 
         var response = new
         {
             resume.Id,
             resume.Name,
             resume.Email,
-            resume.Phone
+            resume.Phone,
+            resume.AreaOfInterest,
+            resume.ProfessionalSummary
         };
 
+        // Retorna HTTP 201 Created
         return Created(string.Empty, response);
     }
 
-    // NOVO ENDPOINT DE EXTRAÇÃO (AUTOFILL)
     [HttpPost("parse")]
     public async Task<IActionResult> Parse([FromForm] IFormFile file)
     {
@@ -57,7 +54,7 @@ public class ResumesController : ControllerBase
 
         var parsedData = _parseResumeUseCase.Execute(pdfBytes);
 
-        return Ok(parsedData); // Retorna os dados extraídos sem guardar no SQL
+        return Ok(parsedData); 
     }
 
     [HttpGet]
@@ -67,7 +64,6 @@ public class ResumesController : ControllerBase
         return Ok(resumes);
     }
 
-    // Método privado para evitar duplicação de regras de negócio (DRY)
     private IActionResult? ValidatePdfFile(IFormFile file)
     {
         if (file == null || file.Length == 0)
