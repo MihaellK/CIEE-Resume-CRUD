@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { Link } from 'react-router-dom';
 
 interface Resume {
   id: string;
@@ -62,6 +63,7 @@ const ResumeList: React.FC = () => {
             <th style={{ padding: '0.5rem' }}>Nome</th>
             <th style={{ padding: '0.5rem' }}>E-mail</th>
             <th style={{ padding: '0.5rem' }}>Telefone</th>
+            <th style={{ padding: '0.5rem' }}>Ações</th>
           </tr>
         </thead>
         <tbody>
@@ -70,6 +72,14 @@ const ResumeList: React.FC = () => {
               <td style={{ padding: '0.5rem' }}>{resume.name}</td>
               <td style={{ padding: '0.5rem' }}>{resume.email || 'Não informado'}</td>
               <td style={{ padding: '0.5rem' }}>{resume.phone || 'Não informado'}</td>
+              <td style={{ padding: '0.5rem' }}>
+                <Link 
+                  to={`/resumes/${resume.id}`} 
+                  style={{ color: '#0066cc', textDecoration: 'none', fontWeight: 'bold' }}
+                >
+                  Ver Detalhes
+                </Link>
+              </td>
             </tr>
           ))}
         </tbody>

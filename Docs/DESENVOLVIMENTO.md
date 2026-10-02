@@ -368,3 +368,25 @@
 - **Adaptações e Correções:** Injeção manual do UseCase em todos os testes parametrizados pelo desenvolvedor para garantir a compilação do construtor.
 - **Verificação:** Execução de `dotnet test` com 100% de sucesso.
 - **Limitações Conhecidas:** Nenhuma.
+
+## Bloco 31: Interface de Detalhes do Currículo e Roteamento
+- **Etapa/Funcionalidade:** Criação do componente `ResumeDetails.tsx` e configuração do `react-router-dom` no `App.tsx` para permitir navegação multipágina (SPA).
+- **Decisão Técnica e Motivação:** Para exibir os dados completos do candidato sem sobrecarregar o ecrã principal, implementou-se uma página dedicada acessível via URL direta (`/resumes/:id`). O React Router foi escolhido pela sua adoção padrão no ecossistema e facilidade de integração. A requisição HTTP é acionada no `useEffect` observando o parâmetro `id`, garantindo que o ciclo de vida do componente acompanhe a rota atual.
+- **Participação da IA:** Forneceu a implementação do componente em TDD (Fase Green) cobrindo os cenários testados (Loading, Sucesso e 404), e a configuração estrutural do roteamento no `App.tsx`.
+- **Adaptações e Correções:** Inclusão do componente `<Link />` para garantir o regresso à página inicial sem causar *full page reload*.
+- **Verificação:** Execução do `npm run test`, aprovando a renderização condicional baseada nas respostas mockadas do Axios.
+- **Limitações Conhecidas:** A aplicação ainda não possui cache nativo nas requisições. Retornar à página inicial irá disparar um novo `GET` para a listagem.
+
+## Bloco 31.1: Correção de Tipagem no Bloco Catch (ESLint)
+- **Etapa/Funcionalidade:** Refatoração da tipagem de exceções no componente `ResumeDetails.tsx`.
+- **Decisão Técnica e Motivação:** O ESLint assinalou a utilização de `any` no bloco catch como uma má prática (`no-explicit-any`). Para manter a segurança de tipos no TypeScript, a variável de erro foi tipada como `unknown` e o método `axios.isAxiosError` foi utilizado como *type guard* para validar a existência da propriedade `response.status` de forma estrita.
+- **Participação da IA:** Analisou a captura de ecrã do erro apontado pelo ESLint e propôs a solução baseada nas melhores práticas de integração com o Axios.
+- **Verificação:** Compilação limpa do frontend e manutenção do estado "Green" nos testes unitários.
+
+## Bloco 32: Correção de Mock (Vitest) e Navegação na Listagem
+- **Etapa/Funcionalidade:** Correção de falso negativo no teste do `ResumeDetails` e inclusão de link dinâmico para a página de detalhes no componente `ResumeList.tsx`.
+- **Decisão Técnica e Motivação:** O teste unitário falhou[cite: 13] porque o objeto mockado não passava na validação `axios.isAxiosError()`. Resolvemos injetando a inferência de tipo explicitamente no mock do Vitest. A seguir, o `ResumeList` e os seus testes foram atualizados com o `MemoryRouter` e o `<Link>` do `react-router-dom` para viabilizar a transição E2E fluida do utilizador sem recarregar o browser (SPA).
+- **Participação da IA:** Analisou a quebra do teste `TestingLibraryElementError` providenciando o ajuste do mock e reescreveu a estrutura da tabela de listagem incluindo a coluna de navegação parametrizada E a sua respetiva cobertura de testes.
+- **Adaptações e Correções:** O método `mockedAxios.isAxiosError.mockReturnValueOnce(true)` foi adotado para validar o fluxo do erro `404` sem a necessidade de instanciar toda a estrutura pesada de um `AxiosError` real.
+- **Verificação:** Execução do `npm run test` validando que todos os ecrãs passam com o router acoplado em memória.
+- **Limitações Conhecidas:** Nenhuma. O fluxo base do CRUD (Cadastro > Listagem > Detalhes) está finalizado e utilizável.
