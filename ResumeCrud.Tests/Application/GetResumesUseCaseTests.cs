@@ -17,8 +17,8 @@ public class GetResumesUseCaseTests
         // Simulamos o retorno do repositório
         var mockResumes = new List<Resume>
         {
-            new Resume("João Silva", "joao@email.com", "999999999", new byte[] { 1, 2 }),
-            new Resume("Maria Santos", "maria@email.com", "888888888", new byte[] { 3, 4 })
+            new Resume("João Silva", "joao@email.com", "999999999", null, null, new byte[] { 1, 2 }),
+            new Resume("Maria Santos", "maria@email.com", "888888888", null, null, new byte[] { 3, 4 })
         };
         
         repositoryMock.GetAllAsync().Returns(mockResumes);

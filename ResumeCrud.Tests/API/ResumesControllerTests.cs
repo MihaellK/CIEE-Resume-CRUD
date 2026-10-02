@@ -19,7 +19,7 @@ public class ResumesControllerTests
         var getUseCaseMock = Substitute.For<IGetResumesUseCase>();
         
         var fakeBytes = new byte[] { 1, 2, 3 };
-        var expectedResume = new Resume("Mihaell Alves", "email@teste.com", "11999999999", fakeBytes);
+        var expectedResume = new Resume("Mihaell Alves", "email@teste.com", "11999999999", null, null, fakeBytes);
         uploadUseCaseMock.ExecuteAsync("Mihaell Alves", Arg.Any<byte[]>()).Returns(expectedResume);
 
         var mockFile = Substitute.For<IFormFile>();

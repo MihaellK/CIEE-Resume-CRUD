@@ -248,3 +248,43 @@
 - **Adaptações e Correções:** Atualização dos argumentos esperados em `toHaveBeenCalledWith`.
 - **Verificação:** Execução de `npm run test` local. A validação de parâmetros foi cumprida (Fase Green).
 - **Limitações Conhecidas:** Nenhuma. O teste espelha fielmente o comportamento do componente.
+
+## Bloco 22: Reestruturação do Domínio e Novos Requisitos
+- **Etapa/Funcionalidade:** Atualização da entidade `Resume` para suportar os campos "Área de Interesse" e "Resumo Profissional", além de tornar o "E-mail" obrigatório e o "PDF" opcional.
+- **Decisão Técnica e Motivação:** Os requisitos de negócio mudaram. O PDF deixou de ser o artefato principal de gravação para se tornar um facilitador (autofill). Para refletir isso no DDD, a entidade de domínio foi ajustada: o E-mail tornou-se invariável (não pode ser nulo) e o array de bytes do PDF passou a ser opcional, permitindo a persistência de cadastros manuais.
+- **Participação da IA:** Analisou os novos requisitos do utilizador e refatorou a entidade `Resume.cs` para a Fase Green, satisfazendo as novas regras de negócio sem perder a validação defensiva (ex: 5MB limite se o PDF existir).
+- **Adaptações e Correções:** O construtor principal foi expandido para receber os novos campos e a validação de nulidade do `pdfContent` foi removida, mantendo apenas a validação de tamanho caso o ficheiro seja anexado.
+- **Verificação:** Testes de unidade do Domínio (`ResumeTests.cs`) cobrindo as exceções de Nome e Email vazios executados e aprovados.
+- **Limitações Conhecidas:** A mudança na assinatura do construtor da Entidade causará quebras temporárias de compilação nos testes de Casos de Uso antigos, que precisarão de ser refatorados para alinhar com o novo modelo de dados.
+
+## Bloco 22.1: Alinhamento de Contratos e Supressão de Testes Obsoletos
+- **Etapa/Funcionalidade:** Correção de falhas de compilação nos ficheiros `ResumeTests.cs` e `UploadResumeUseCase.cs` originadas pela alteração da assinatura da entidade de Domínio.
+- **Decisão Técnica e Motivação:** Seguindo o princípio Red-Green-Refactor, é essencial garantir que a aplicação volta ao estado de compilação (Green) antes de iniciarmos a divisão arquitetural do endpoint de parsing. O teste que validava ficheiros vazios foi apagado, pois a não obrigatoriedade do PDF tornou-se uma regra de negócio. No `UseCase`, introduziu-se um fallback para `string.Empty` caso o parser falhe a extração do e-mail, delegando a responsabilidade de rejeição (Fail-Fast) para a Entidade de Domínio.
+- **Participação da IA:** Forneceu os códigos atualizados respeitando a nova assinatura `(name, email, phone, areaOfInterest, professionalSummary, pdfContent)` e identificou o teste a ser removido com base na diretiva do utilizador.
+- **Adaptações e Correções:** Exclusão definitiva do teste `Constructor_ShouldThrowArgumentException_WhenPdfContentIsEmpty`.
+- **Verificação:** Compilação do projeto e execução de `dotnet test`. Todos os testes de domínio devem reportar sucesso.
+- **Limitações Conhecidas:** O `UploadResumeUseCase` mistura atualmente a extração de dados com a persistência no repositório. Este comportamento não reflete o novo fluxo de autofill e será refatorado/dividido na próxima etapa.
+
+## Bloco 22.2: Refatoração em Cascata dos Testes Antigos (Fix CS7036)
+- **Etapa/Funcionalidade:** Atualização dos testes unitários `GetResumesUseCaseTests` e `ResumesControllerTests` para corresponder à nova assinatura do construtor da entidade `Resume`.
+- **Decisão Técnica e Motivação:** A mudança na entidade principal do domínio exige a atualização rigorosa de todos os mocks que dependem dela. A passagem explícita de `null` para os novos parâmetros (`AreaOfInterest` e `ProfessionalSummary`) preserva o comportamento original dos testes, garantindo que as lógicas de Upload antigo e Listagem continuam a funcionar até serem reescritas para o novo fluxo arquitetural.
+- **Participação da IA:** Analisou os logs de erro do compilador e identificou que a falha não estava no `UseCase` da imagem, mas sim nos ficheiros de teste referenciados no terminal.
+- **Adaptações e Correções:** Injeção de parâmetros vazios nas chamadas `new Resume(...)` nos testes para satisfazer o compilador estrito do C#.
+- **Verificação:** Execução do `dotnet test` aguardada para confirmar a resolução dos erros CS7036.
+- **Limitações Conhecidas:** Nenhuma.
+
+## Bloco 23: Separação de Responsabilidades - Caso de Uso de Extração (Parse)
+- **Etapa/Funcionalidade:** Criação do `ParseResumeUseCase` e do `ParsedResumeDto`.
+- **Decisão Técnica e Motivação:** Adequação ao novo fluxo de "Autofill". A leitura do PDF foi totalmente desmembrada da persistência de dados. O novo caso de uso atua de forma síncrona, orquestrando estritamente a extração de texto (via `IPdfTextExtractor`) e a heurística de identificação de campos (via `IResumeParserService`), retornando um DTO simples sem gravar no SQL Server.
+- **Participação da IA:** Forneceu os contratos e a implementação concreta do caso de uso seguindo o teste desenhado previamente, assegurando o Single Responsibility Principle (SRP).
+- **Adaptações e Correções:** O método `Execute` foi desenhado sem `Task`/`async` assumindo que o processamento do array de bytes em memória pelas bibliotecas (ex: PdfPig) é CPU-bound e síncrono.
+- **Verificação:** Execução do `dotnet test`. O teste `Execute_ShouldReturnParsedData_WhenPdfIsValid` validou com sucesso o fluxo de orquestração.
+- **Limitações Conhecidas:** A precisão do preenchimento dependerá inteiramente da eficácia da heurística Regex implementada no `IResumeParserService`.
+
+## Bloco 23.1: Alinhamento de Contratos de Parsing e Limpeza de DI
+- **Etapa/Funcionalidade:** Refatoração do `ResumeParserService` para implementar estritamente `IResumeParserService` retornando `ParsedResumeDto`, e limpeza de registos duplicados no `Program.cs`.
+- **Decisão Técnica e Motivação:** A classe concreta do parser ainda utilizava um *record* obsoleto, causando divergência de contratos (CS0738). A adoção do DTO padrão unifica o transporte de dados da aplicação para a camada de apresentação. A extração do Nome foi adicionada com uma heurística baseada em linhas, uma vez que nomes próprios carecem de padrões de Regex infalíveis. No container de DI, as chamadas a classes concretas foram removidas para forçar o acoplamento exclusivo através de interfaces.
+- **Participação da IA:** Inspecionou e corrigiu as divergências nos ficheiros `ResumeParserService.cs` e `Program.cs` enviados pelo utilizador, propondo também uma técnica básica para capturar o "Nome" do candidato.
+- **Adaptações e Correções:** Remoção do `ParsedResumeData` e das linhas `builder.Services.AddScoped<UploadResumeUseCase>();` e `builder.Services.AddScoped<ResumeParserService>();`.
+- **Verificação:** Execução do `dotnet test` confirmando o sucesso do Épico de Parsing (Fase Green).
+- **Limitações Conhecidas:** A heurística de obter o "Nome" através da primeira linha do PDF é falível se o documento tiver cabeçalhos estilizados (ex: "CURRÍCULO VITAE" no topo). O frontend deve sempre permitir a correção manual.

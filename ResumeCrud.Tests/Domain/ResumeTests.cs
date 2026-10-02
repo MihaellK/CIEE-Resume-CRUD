@@ -5,6 +5,27 @@ namespace ResumeCrud.Tests.Domain;
 
 public class ResumeTests
 {
+    [Fact]
+    public void Constructor_ShouldCreateValidResume_WhenAllRequiredFieldsAreProvided()
+    {
+        // Arrange
+        var name = "Mihaell Alves";
+        var email = "mihaell@teste.com";
+        var phone = "11999999999";
+        var areaOfInterest = "Engenharia de Software";
+        var professionalSummary = "Especialista em React e .NET com foco em TDD.";
+
+        // Act
+        var resume = new Resume(name, email, phone, areaOfInterest, professionalSummary);
+
+        // Assert
+        resume.Name.Should().Be(name);
+        resume.Email.Should().Be(email);
+        resume.AreaOfInterest.Should().Be(areaOfInterest);
+        resume.ProfessionalSummary.Should().Be(professionalSummary);
+        resume.Id.Should().NotBeEmpty();
+    }
+
     [Theory]
     [InlineData("")]
     [InlineData(" ")]
@@ -12,25 +33,24 @@ public class ResumeTests
     public void Constructor_ShouldThrowArgumentException_WhenNameIsNullOrWhitespace(string? invalidName)
     {
         // Arrange & Act
-        Action act = () => new Resume(invalidName, "email@teste.com", null, new byte[] { 0x01 });
+        Action act = () => new Resume(invalidName!, "email@teste.com", "123", "Area", "Resumo");
 
         // Assert
         act.Should().Throw<ArgumentException>()
            .WithMessage("Nome do candidato é obrigatório.*");
     }
 
-    [Fact]
-    public void Constructor_ShouldThrowArgumentException_WhenPdfContentIsEmpty()
+    [Theory]
+    [InlineData("")]
+    [InlineData(" ")]
+    [InlineData(null)]
+    public void Constructor_ShouldThrowException_WhenEmailIsInvalid(string? invalidEmail)
     {
-        // Arrange
-        var emptyPdf = Array.Empty<byte>();
-
         // Act
-        Action act = () => new Resume("João Silva", "joao@teste.com", null, emptyPdf);
+        Action act = () => new Resume("Mihaell", invalidEmail!, "123", "Area", "Resumo");
 
         // Assert
-        act.Should().Throw<ArgumentException>()
-           .WithMessage("O conteúdo do currículo não pode estar vazio.*");
+        act.Should().Throw<ArgumentException>().WithMessage("*e-mail*");
     }
 
     [Fact]
@@ -41,7 +61,7 @@ public class ResumeTests
         var oversizedPdf = new byte[5 * 1024 * 1024 + 1]; 
 
         // Act
-        Action act = () => new Resume("João Silva", "joao@teste.com", null, oversizedPdf);
+        Action act = () => new Resume("João Silva", "joao@teste.com", null, null, null, oversizedPdf);
 
         // Assert
         act.Should().Throw<ArgumentException>()

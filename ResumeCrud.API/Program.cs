@@ -16,10 +16,10 @@ builder.Services.AddScoped<IResumeRepository, ResumeRepository>();
 
 // Injeção de Dependências (Aplicação)
 builder.Services.AddScoped<IPdfTextExtractor, PdfTextExtractorService>();
-builder.Services.AddScoped<ResumeParserService>();
-builder.Services.AddScoped<UploadResumeUseCase>();
 builder.Services.AddScoped<IUploadResumeUseCase, UploadResumeUseCase>();
 builder.Services.AddScoped<IGetResumesUseCase, GetResumesUseCase>();
+builder.Services.AddScoped<IParseResumeUseCase, ParseResumeUseCase>();
+builder.Services.AddScoped<IResumeParserService, ResumeParserService>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

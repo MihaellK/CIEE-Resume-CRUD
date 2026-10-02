@@ -28,7 +28,17 @@ public class UploadResumeUseCase : IUploadResumeUseCase
         var parsedData = _parserService.ParseText(rawText);
 
         // 3. Cria a entidade de domínio
-        var resume = new Resume(name, parsedData.Email, parsedData.Phone, pdfBytes);
+        // encontrar o email, enviamos string vazia para o Domínio rejeitar
+        var email = parsedData.Email ?? string.Empty;
+        
+        var resume = new Resume(
+            name: name, 
+            email: email, 
+            phone: parsedData.Phone, 
+            areaOfInterest: null, 
+            professionalSummary: null, 
+            pdfContent: pdfBytes
+        );
 
         // 4. Persiste no repositório
         await _repository.AddAsync(resume);

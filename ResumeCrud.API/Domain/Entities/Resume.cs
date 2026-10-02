@@ -6,26 +6,34 @@ public class Resume
 
     public Guid Id { get; private set; }
     public string Name { get; private set; }
-    public string? Email { get; private set; }
+    public string Email { get; private set; }
     public string? Phone { get; private set; }
-    public byte[] PdfContent { get; private set; }
+    public string? AreaOfInterest { get; private set; }
+    public string? ProfessionalSummary { get; private set; }
+    
+    // Opcional: podemos guardar o PDF se o utilizador o enviou, 
+    // mas não impede o cadastro se for nulo.
+    public byte[]? PdfContent { get; private set; } 
     public DateTime CreatedAt { get; private set; }
 
-    public Resume(string name, string? email, string? phone, byte[] pdfContent)
+    // Construtor atualizado com os novos campos
+    public Resume(string name, string email, string? phone, string? areaOfInterest, string? professionalSummary, byte[]? pdfContent = null)
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("Nome do candidato é obrigatório.", nameof(name));
 
-        if (pdfContent == null || pdfContent.Length == 0)
-            throw new ArgumentException("O conteúdo do currículo não pode estar vazio.", nameof(pdfContent));
+        if (string.IsNullOrWhiteSpace(email))
+            throw new ArgumentException("O e-mail do candidato é obrigatório.", nameof(email));
 
-        if (pdfContent.Length > MaxPdfSizeBytes)
+        if (pdfContent != null && pdfContent.Length > MaxPdfSizeBytes)
             throw new ArgumentException("O arquivo de currículo não pode exceder 5MB.", nameof(pdfContent));
 
         Id = Guid.NewGuid();
         Name = name;
         Email = email;
         Phone = phone;
+        AreaOfInterest = areaOfInterest;
+        ProfessionalSummary = professionalSummary;
         PdfContent = pdfContent;
         CreatedAt = DateTime.UtcNow;
     }
