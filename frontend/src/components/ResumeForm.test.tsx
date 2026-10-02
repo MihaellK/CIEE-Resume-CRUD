@@ -1,5 +1,5 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest'; // Correção: 'vi' adicionado à importação
 import axios from 'axios';
 import ResumeForm from './ResumeForm';
 
@@ -86,7 +86,6 @@ describe('ResumeForm Component', () => {
   // Fase Red para a integração com a API
   it('Should call the API with FormData when valid data is submitted', async () => {
     // Arrange
-    // Tipamos o mock para o TypeScript reconhecer os métodos do Jest/Vitest
     const mockedAxios = vi.mocked(axios);
     mockedAxios.post.mockResolvedValueOnce({ data: { id: '123', name: 'Mihaell Alves' } });
 
@@ -105,12 +104,14 @@ describe('ResumeForm Component', () => {
 
     // Assert
     await waitFor(() => {
+      const expectedUrl = import.meta.env.VITE_API_URL || 'http://localhost:5092/api/resumes/upload';
+
       // Verifica se o axios.post foi chamado exatamente 1 vez
       expect(mockedAxios.post).toHaveBeenCalledTimes(1);
       
       // Verifica se a chamada foi feita para o endpoint correto e com FormData
       expect(mockedAxios.post).toHaveBeenCalledWith(
-        'https://localhost:1433/api/resumes/upload', // O URL real será configurado depois via env vars
+        expectedUrl,
         expect.any(FormData),
         expect.objectContaining({
           headers: { 'Content-Type': 'multipart/form-data' }
@@ -118,5 +119,4 @@ describe('ResumeForm Component', () => {
       );
     });
   });
-
 });

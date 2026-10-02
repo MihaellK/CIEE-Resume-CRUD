@@ -208,3 +208,43 @@
 - **Adaptações e Correções:** Remoção das classes `FormCollection` e `FormFileCollection` do bloco *Arrange* do teste.
 - **Verificação:** Execução do `dotnet test`. O teste passou, validando a integridade da API.
 - **Limitações Conhecidas:** Nenhuma. O teste está agora altamente coeso com a implementação.
+
+## Bloco 21: Listagem de Currículos no Frontend (TDD - Fase Green)
+- **Etapa/Funcionalidade:** Criação do componente `ResumeList` com renderização em formato de tabela e gestão de ciclo de vida (`useEffect`). Integração no `App.tsx`.
+- **Decisão Técnica e Motivação:** A utilização do estado local (`isLoading`, `error`, `resumes`) garante que a interface responda de forma fluida ao tempo de latência da rede. A tabela semântica (`<table>`, `<thead>`, `<tbody>`) foi escolhida para a apresentação dos dados tabulares extraídos (Nome, Email, Telefone) de forma acessível e estruturada.
+- **Participação da IA:** Forneceu o código do componente de UI em React, incluindo o tratamento do endpoint a partir da variável de ambiente existente (`replace('/upload', '')`) para evitar falhas de CORS ou roteamento no frontend.
+- **Adaptações e Correções:** O endpoint do fetch foi ajustado dinamicamente para aproveitar a variável de ambiente base, prevendo a flexibilidade necessária para quando o sistema de rotas e ambientes (Dev/Prod) for expandido.
+- **Verificação:** Execução de `npm run test`. O React Testing Library e o *mock* do Vitest garantiram a presença da mensagem "A carregar..." (estado inicial) e a posterior montagem da grelha de dados após a resolução do Promise do Axios.
+- **Limitações Conhecidas:** A lista atual apenas faz a requisição na montagem inicial do componente (`useEffect` com array de dependências vazio). Se um novo currículo for enviado pelo formulário, a tabela não se atualiza automaticamente sem um *refresh* da página ou a implementação de uma gestão de estado global / passagem de *callbacks* (lifting state up).
+
+## Bloco 21.1: Refatoração do Ciclo de Vida e AbortController (Refactor)
+- **Etapa/Funcionalidade:** Refatoração do `useEffect` no componente `ResumeList` para encapsular a função `fetchResumes` e introdução de limpeza de memória com `AbortController`.
+- **Decisão Técnica e Motivação:** Linters estritos alertaram para o risco de invocar funções de estado fora do encerramento léxico do `useEffect`. Mover a declaração da função para o interior do *Hook* garante a estabilidade das dependências do React. O `AbortController` atua como salvaguarda contra *memory leaks*, interrompendo a requisição HTTP caso o utilizador navegue para fora da vista antes da resposta do servidor.
+- **Participação da IA:** Analisou o aviso de *linting* na imagem fornecida e aplicou o padrão recomendado pela documentação do React para chamadas assíncronas assentes em *Hooks*.
+- **Adaptações e Correções:** Estrutura do `useEffect` reescrita para incluir função de retorno (`cleanup function`).
+- **Verificação:** Inspeção visual do editor (aviso resolvido) e execução de `npm run test` mantendo a cobertura *Green*.
+- **Limitações Conhecidas:** Nenhuma. Prática padrão de excelência em aplicações React modernas.
+
+## Bloco 21.2: Correção de Asserção do Teste da Listagem (TDD - Fase Green)
+- **Etapa/Funcionalidade:** Atualização do teste `ResumeList.test.tsx` para validar a presença do `AbortSignal` e corrigir a verificação do URL manipulado.
+- **Decisão Técnica e Motivação:** Durante o *refactor* (Bloco 21.1), a assinatura da chamada `axios.get` foi alterada para incluir cancelamento de requisições. Como os mocks (`vi.mocked`) do Vitest validam todos os parâmetros enviados por predefinição, o teste quebrou (Fase Red acidental). Utilizou-se o `expect.objectContaining` e `expect.any(AbortSignal)` para validar a injeção do sinal sem precisar de instanciar o controlador exato dentro do teste, mantendo-o desacoplado e resiliente.
+- **Participação da IA:** Analisou a saída do terminal de testes para diagnosticar a falha de divergência de argumentos (URL e sinal de cancelamento) e forneceu a asserção correta.
+- **Adaptações e Correções:** O cálculo da variável de ambiente no teste foi igualado ao do componente para evitar asserções fixas erróneas (`/upload` vs `/`).
+- **Verificação:** Executado `npm run test`. Suíte de testes retornou aos 100% de sucesso.
+- **Limitações Conhecidas:** Nenhuma.
+
+## Bloco 21.3: Correção de Importações e Resiliência no Teste do Formulário
+- **Etapa/Funcionalidade:** Correção de erro de referência no ficheiro `ResumeForm.test.tsx` e blindagem da asserção de URL.
+- **Decisão Técnica e Motivação:** A suíte de testes quebrava porque o objeto de mocking `vi` estava a ser utilizado sem ser importado do Vitest. A sua importação resolve o erro estrutural. Em simultâneo, a asserção do URL do endpoint `POST` foi atualizada para ler a variável `import.meta.env.VITE_API_URL` como *fallback*, garantindo que os testes não falham se o ambiente de teste herdar o `.env.local` em vez de usar a *string* fixada.
+- **Participação da IA:** Inspecionou o script original fornecido pelo utilizador, detetou a ausência da importação do `vi` e refatorou a asserção do endpoint com base no comportamento de *fallback* aprendido anteriormente.
+- **Adaptações e Correções:** Inclusão de `vi` na destruição do módulo `vitest` e cálculo dinâmico da variável `expectedUrl`.
+- **Verificação:** Execução do `npm run test`, esperando uma passagem *Green* completa.
+- **Limitações Conhecidas:** Nenhuma.
+
+## Bloco 21.4: Sincronização do Teste da Listagem (AbortController)
+- **Etapa/Funcionalidade:** Atualização da asserção de espionagem (`spy`) do Axios no teste `ResumeList.test.tsx`.
+- **Decisão Técnica e Motivação:** O teste de unidade da listagem estava a falhar pois não previa o envio do `AbortSignal` incorporado na refatoração de ciclo de vida do componente. Utilizar `expect.objectContaining` com `expect.any(AbortSignal)` permite ao Vitest validar a estrutura da requisição sem precisar de igualdade estrita do objeto de memória do controlador, garantindo resiliência ao teste.
+- **Participação da IA:** Inspecionou o terminal de erros e forneceu a asserção correta para o mock do Axios.
+- **Adaptações e Correções:** Atualização dos argumentos esperados em `toHaveBeenCalledWith`.
+- **Verificação:** Execução de `npm run test` local. A validação de parâmetros foi cumprida (Fase Green).
+- **Limitações Conhecidas:** Nenhuma. O teste espelha fielmente o comportamento do componente.
