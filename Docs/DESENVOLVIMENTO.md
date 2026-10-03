@@ -390,3 +390,19 @@
 - **Adaptações e Correções:** O método `mockedAxios.isAxiosError.mockReturnValueOnce(true)` foi adotado para validar o fluxo do erro `404` sem a necessidade de instanciar toda a estrutura pesada de um `AxiosError` real.
 - **Verificação:** Execução do `npm run test` validando que todos os ecrãs passam com o router acoplado em memória.
 - **Limitações Conhecidas:** Nenhuma. O fluxo base do CRUD (Cadastro > Listagem > Detalhes) está finalizado e utilizável.
+
+## Bloco 33: Aprimoramento da Heurística do Parser (Autofill)
+- **Etapa/Funcionalidade:** Refatoração da lógica de extração do nome no `ResumeParserService` para ignorar cabeçalhos genéricos (ex: "Curriculum Vitae", "Currículo", "Dados Pessoais").
+- **Decisão Técnica e Motivação:** A heurística inicial capturava simplesmente a primeira linha não vazia do PDF. Testes unitários evidenciaram que documentos com títulos estruturados preenchiam o campo 'Nome' de forma incorreta (ex: assumindo "CURRÍCULO" como o nome). Foi implementado um dicionário de *boilerplates* e uma iteração que varre as linhas validando-as em modo *case-insensitive* até encontrar um candidato válido.
+- **Participação da IA:** Forneceu os testes unitários baseados nos cenários de falha (Fase Red) e a implementação da iteração de *fallback* para o `ResumeParserService` (Fase Green).
+- **Adaptações e Correções:** Inclusão de um limite mínimo de caracteres (`Length > 2`) para evitar capturar linhas com caracteres isolados gerados por falhas de codificação do PDF.
+- **Verificação:** Execução integral da suíte de testes (`dotnet test`), passando com sucesso no cenário `ParseText_ShouldExtractName_IgnoringBoilerplateHeaders`.
+- **Limitações Conhecidas:** A heurística continua a ser dependente do layout. Se o nome estiver posicionado num cabeçalho lateral complexo lido fora de ordem pela biblioteca de PDF, a extração pode falhar. Soluções mais robustas envolveriam IA/NLP, mas fogem ao escopo performático deste teste técnico.
+
+## Bloco 34: Otimização Defensiva do Parser (Mitigação de Achatamento de PDF)
+- **Etapa/Funcionalidade:** Refinamento da heurística de extração de nome no `ResumeParserService` para lidar com a perda de quebras de linha (`\n`) gerada pelas bibliotecas de extração de PDF.
+- **Decisão Técnica e Motivação:** Ao processar um PDF real, identificou-se que o texto extraído unia o nome, localização, telefone e e-mail na mesma linha devido ao "achatamento" da formatação visual (ex: `Nome Brazil - SP | Telefone | Email`). Para evitar que o campo Nome recebesse um parágrafo inteiro, implementou-se um corte de string baseado em delimitadores textuais comuns (`|`, `-`, `,`, `(`) e um limitador de segurança estrito (máximo de 6 palavras por nome).
+- **Participação da IA:** Analisou o *output* corrompido providenciado pelo utilizador, desenhou o teste unitário simulando a anomalia (Fase Red) e escreveu o código de truncamento defensivo no C# (Fase Green).
+- **Adaptações e Correções:** O delimitador de email `@` também foi adicionado à lista para o caso de o candidato colar o email diretamente após o nome sem espaçamento.
+- **Verificação:** Execução do `dotnet test` assegurando a captura correta no novo cenário parametrizado do `InlineData`.
+- **Limitações Conhecidas:** Dependendo do formato do texto, palavras residuais como a cidade/país ("Brazil")[cite: 16] ainda podem ficar anexadas ao nome se não forem precedidas por um dos delimitadores da regra. O objetivo é reduzir a fricção do *autofill*, não garantir 100% de perfeição.
