@@ -46,7 +46,7 @@ public class ResumesController : ControllerBase
     }
 
     [HttpPost("parse")]
-    public async Task<IActionResult> Parse([FromForm] IFormFile file)
+    public async Task<IActionResult> Parse(IFormFile file)
     {
         var validationError = ValidatePdfFile(file);
         if (validationError != null) return validationError;

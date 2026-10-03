@@ -422,3 +422,10 @@
 - **Adaptações e Correções:** O regex do seletor no teste foi alterado para ignorar *case sensitivity* (`/i`) e bater exatamente com o novo atributo `aria-label`.
 - **Verificação:** Execução da suite `npm run test`, confirmando que o DOM virtual localiza corretamente o elemento e interage com o `FormData`.
 - **Limitações Conhecidas:** Testes estritamente acoplados a textos de UI podem ser frágeis (tendem a quebrar se o *copywriting* mudar). No entanto, o uso de `getByLabelText` ou `getByRole` ainda é preferível a `getByTestId`, pois valida a acessibilidade real da aplicação.
+
+## Bloco 37: Resolução Definitiva de Conflito OpenAPI/Swagger (TypeLoad e IFormFile)
+- **Etapa/Funcionalidade:** Correção de falhas na geração do documento Swagger (`swagger.json`).
+- **Decisão Técnica e Motivação:** A integração do Swagger enfrentou dois obstáculos sucessivos. Primeiro, um `System.TypeLoadException` gerado por um conflito de versões provocado por uma declaração explícita de `Microsoft.OpenApi` no `.csproj`, resolvido ao delegar a gestão de dependências exclusivamente ao `Swashbuckle.AspNetCore` (6.8.1). Em seguida, ocorreu um `SwaggerGeneratorException` no endpoint `/parse` devido ao uso do atributo `[FromForm]` em conjunto com o `IFormFile`. Em versões modernas do .NET e OpenAPI 3, o `IFormFile` é inferido automaticamente como *multipart/form-data*. O atributo foi removido da assinatura do controlador para evitar que o gerador tentasse mapear a interface do arquivo como um formulário de texto plano.
+- **Participação da IA:** Diagnosticou as mensagens de exceção sequenciais, orientou a remoção do pacote conflituoso no XML e corrigiu o *Model Binding* no Controller.
+- **Verificação:** Execução do `dotnet run`, validando o carregamento da interface gráfica do Swagger e a presença do botão nativo de upload de arquivo no endpoint de extração.
+- **Limitações Conhecidas:** Nenhuma. A documentação interativa está 100% aderente ao código.
