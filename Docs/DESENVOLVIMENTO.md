@@ -385,7 +385,7 @@
 
 ## Bloco 32: Correção de Mock (Vitest) e Navegação na Listagem
 - **Etapa/Funcionalidade:** Correção de falso negativo no teste do `ResumeDetails` e inclusão de link dinâmico para a página de detalhes no componente `ResumeList.tsx`.
-- **Decisão Técnica e Motivação:** O teste unitário falhou[cite: 13] porque o objeto mockado não passava na validação `axios.isAxiosError()`. Resolvemos injetando a inferência de tipo explicitamente no mock do Vitest. A seguir, o `ResumeList` e os seus testes foram atualizados com o `MemoryRouter` e o `<Link>` do `react-router-dom` para viabilizar a transição E2E fluida do utilizador sem recarregar o browser (SPA).
+- **Decisão Técnica e Motivação:** O teste unitário falhou porque o objeto mockado não passava na validação `axios.isAxiosError()`. Resolvemos injetando a inferência de tipo explicitamente no mock do Vitest. A seguir, o `ResumeList` e os seus testes foram atualizados com o `MemoryRouter` e o `<Link>` do `react-router-dom` para viabilizar a transição E2E fluida do utilizador sem recarregar o browser (SPA).
 - **Participação da IA:** Analisou a quebra do teste `TestingLibraryElementError` providenciando o ajuste do mock e reescreveu a estrutura da tabela de listagem incluindo a coluna de navegação parametrizada E a sua respetiva cobertura de testes.
 - **Adaptações e Correções:** O método `mockedAxios.isAxiosError.mockReturnValueOnce(true)` foi adotado para validar o fluxo do erro `404` sem a necessidade de instanciar toda a estrutura pesada de um `AxiosError` real.
 - **Verificação:** Execução do `npm run test` validando que todos os ecrãs passam com o router acoplado em memória.
@@ -405,4 +405,4 @@
 - **Participação da IA:** Analisou o *output* corrompido providenciado pelo utilizador, desenhou o teste unitário simulando a anomalia (Fase Red) e escreveu o código de truncamento defensivo no C# (Fase Green).
 - **Adaptações e Correções:** O delimitador de email `@` também foi adicionado à lista para o caso de o candidato colar o email diretamente após o nome sem espaçamento.
 - **Verificação:** Execução do `dotnet test` assegurando a captura correta no novo cenário parametrizado do `InlineData`.
-- **Limitações Conhecidas:** Dependendo do formato do texto, palavras residuais como a cidade/país ("Brazil")[cite: 16] ainda podem ficar anexadas ao nome se não forem precedidas por um dos delimitadores da regra. O objetivo é reduzir a fricção do *autofill*, não garantir 100% de perfeição.
+- **Limitações Conhecidas:** Dependendo do formato do texto, palavras residuais como a cidade/país ("Brazil") ainda podem ficar anexadas ao nome se não forem precedidas por um dos delimitadores da regra. O objetivo é reduzir a fricção do *autofill*, não garantir 100% de perfeição.
