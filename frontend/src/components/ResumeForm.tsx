@@ -104,58 +104,151 @@ const ResumeForm: React.FC = () => {
     }
   };
 
-  return (
-    <div style={{ marginBottom: '2rem' }}>
-      <h2>Novo Currículo</h2>
-      
-      {globalError && <div style={{ color: 'red', marginBottom: '1rem' }}>{globalError}</div>}
-      {successMessage && <div style={{ color: 'green', marginBottom: '1rem' }}>{successMessage}</div>}
+  // Estilos base reutilizáveis
+  const inputStyle = {
+    width: '100%',
+    padding: '0.75rem',
+    marginTop: '0.25rem',
+    border: '1px solid #ccc',
+    borderRadius: '4px',
+    fontSize: '1rem',
+    boxSizing: 'border-box' as const,
+  };
 
-      <div style={{ marginBottom: '1.5rem', padding: '1rem', backgroundColor: '#f9f9f9', border: '1px dashed #ccc' }}>
-        <label htmlFor="pdf-upload" style={{ display: 'block', fontWeight: 'bold' }}>
-          Fazer upload de currículo (PDF Autofill)
-        </label>
-        <p style={{ fontSize: '0.85rem', color: '#666' }}>Opcional. Envie um PDF para preencher os dados automaticamente.</p>
+  const labelStyle = {
+    display: 'block',
+    fontWeight: '600',
+    color: '#333',
+    marginTop: '1rem',
+    fontSize: '0.9rem'
+  };
+
+  const errorStyle = {
+    color: '#d32f2f',
+    fontSize: '0.85rem',
+    marginTop: '0.25rem',
+    display: 'block'
+  };
+
+  return (
+    <div style={{
+      maxWidth: '600px',
+      margin: '0 auto',
+      padding: '2rem',
+      backgroundColor: '#ffffff',
+      borderRadius: '8px',
+      boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+      fontFamily: 'system-ui, -apple-system, sans-serif'
+    }}>
+      <h2 style={{ marginTop: 0, color: '#1a1a1a', borderBottom: '2px solid #f0f0f0', paddingBottom: '0.5rem' }}>
+        Novo Currículo
+      </h2>
+
+      {globalError && (
+        <div role="alert" style={{ padding: '1rem', backgroundColor: '#ffebee', color: '#c62828', borderRadius: '4px', marginBottom: '1rem' }}>
+          {globalError}
+        </div>
+      )}
+
+      {successMessage && (
+        <div role="alert" style={{ padding: '1rem', backgroundColor: '#e8f5e9', color: '#2e7d32', borderRadius: '4px', marginBottom: '1rem' }}>
+          Currículo cadastrado com sucesso!
+        </div>
+      )}
+
+      <div style={{ backgroundColor: '#f8f9fa', padding: '1.5rem', borderRadius: '6px', marginBottom: '1.5rem', border: '1px dashed #ced4da' }}>
+        <h3 style={{ marginTop: 0, fontSize: '1.1rem', color: '#495057' }}>Preenchimento Automático (Autofill)</h3>
+        <p style={{ fontSize: '0.9rem', color: '#6c757d', marginBottom: '1rem' }}>
+          Opcional. Faça upload de um currículo em PDF para extrair os dados básicos.
+        </p>
         <input 
-          id="pdf-upload" 
           type="file" 
-          accept=".pdf" 
-          onChange={handlePdfUpload} 
+          accept="application/pdf" 
+          onChange={handlePdfUpload}
           disabled={isParsing || isSubmitting}
+          aria-label="Upload de PDF para preenchimento automático"
         />
-        {isParsing && <span style={{ marginLeft: '1rem', color: '#0066cc' }}>A extrair dados...</span>}
+        {isParsing && <span aria-live="polite" style={{ marginLeft: '1rem', fontSize: '0.9rem', color: '#0066cc' }}>Processando documento...</span>}
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      <form onSubmit={handleSubmit(onSubmit)} noValidate>
         <div>
-          <label htmlFor="name" style={{ display: 'block' }}>Nome Completo *</label>
-          <input id="name" style={{ width: '100%', padding: '0.5rem' }} {...register('name')} disabled={isSubmitting} />
-          {errors.name && <span style={{ color: 'red', fontSize: '0.85rem' }}>{errors.name.message}</span>}
+          <label htmlFor="name" style={labelStyle}>Nome Completo *</label>
+          <input
+            id="name"
+            type="text"
+            placeholder="Ex: João da Silva"
+            style={{ ...inputStyle, borderColor: errors.name ? '#d32f2f' : '#ccc' }}
+            aria-invalid={!!errors.name}
+            {...register('name')}
+          />
+          {errors.name && <span style={errorStyle} role="alert">{errors.name.message}</span>}
         </div>
 
         <div>
-          <label htmlFor="email" style={{ display: 'block' }}>E-mail *</label>
-          <input id="email" type="email" style={{ width: '100%', padding: '0.5rem' }} {...register('email')} disabled={isSubmitting} />
-          {errors.email && <span style={{ color: 'red', fontSize: '0.85rem' }}>{errors.email.message}</span>}
+          <label htmlFor="email" style={labelStyle}>E-mail *</label>
+          <input
+            id="email"
+            type="email"
+            placeholder="Ex: joao@email.com"
+            style={{ ...inputStyle, borderColor: errors.email ? '#d32f2f' : '#ccc' }}
+            aria-invalid={!!errors.email}
+            {...register('email')}
+          />
+          {errors.email && <span style={errorStyle} role="alert">{errors.email.message}</span>}
         </div>
 
         <div>
-          <label htmlFor="phone" style={{ display: 'block' }}>Telefone</label>
-          <input id="phone" style={{ width: '100%', padding: '0.5rem' }} {...register('phone')} disabled={isSubmitting} />
+          <label htmlFor="phone" style={labelStyle}>Telefone</label>
+          <input
+            id="phone"
+            type="tel"
+            placeholder="Ex: (11) 99999-9999"
+            style={inputStyle}
+            {...register('phone')}
+          />
         </div>
 
         <div>
-          <label htmlFor="areaOfInterest" style={{ display: 'block' }}>Área ou Cargo de Interesse</label>
-          <input id="areaOfInterest" style={{ width: '100%', padding: '0.5rem' }} {...register('areaOfInterest')} disabled={isSubmitting} />
+          <label htmlFor="areaOfInterest" style={labelStyle}>Área ou Cargo de Interesse</label>
+          <input
+            id="areaOfInterest"
+            type="text"
+            placeholder="Ex: Engenharia de Software"
+            style={inputStyle}
+            {...register('areaOfInterest')}
+          />
         </div>
 
         <div>
-          <label htmlFor="professionalSummary" style={{ display: 'block' }}>Resumo Profissional</label>
-          <textarea id="professionalSummary" rows={4} style={{ width: '100%', padding: '0.5rem' }} {...register('professionalSummary')} disabled={isSubmitting} />
+          <label htmlFor="professionalSummary" style={labelStyle}>Resumo Profissional</label>
+          <textarea
+            id="professionalSummary"
+            rows={4}
+            placeholder="Descreva brevemente as qualificações..."
+            style={{ ...inputStyle, resize: 'vertical' }}
+            {...register('professionalSummary')}
+          />
         </div>
 
-        <button type="submit" disabled={isParsing || isSubmitting} style={{ padding: '0.75rem', marginTop: '1rem', cursor: 'pointer' }}>
-          {isSubmitting ? 'A salvar...' : 'Salvar Currículo'}
+        <button 
+          type="submit" 
+          disabled={isSubmitting || isParsing}
+          style={{
+            width: '100%',
+            padding: '1rem',
+            marginTop: '2rem',
+            backgroundColor: (isSubmitting || isParsing) ? '#9ca3af' : '#2563eb',
+            color: '#ffffff',
+            border: 'none',
+            borderRadius: '4px',
+            fontSize: '1rem',
+            fontWeight: '600',
+            cursor: (isSubmitting || isParsing) ? 'not-allowed' : 'pointer',
+            transition: 'background-color 0.2s'
+          }}
+        >
+          {isSubmitting ? 'A Salvar...' : 'Salvar Currículo'}
         </button>
       </form>
     </div>

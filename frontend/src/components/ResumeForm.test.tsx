@@ -59,7 +59,7 @@ describe('ResumeForm Component - Novos Requisitos', () => {
 
     render(<ResumeForm />);
     
-    const fileInput = screen.getByLabelText(/fazer upload de currículo \(pdf autofill\)/i);
+    const fileInput = screen.getByLabelText(/upload de pdf para preenchimento automático/i);
     const validFile = new File(['dummy'], 'curriculo.pdf', { type: 'application/pdf' });
     
     // Ao inserir o ficheiro, o evento deve disparar a chamada à API de parse imediatamente

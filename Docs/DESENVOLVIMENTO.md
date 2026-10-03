@@ -406,3 +406,19 @@
 - **Adaptações e Correções:** O delimitador de email `@` também foi adicionado à lista para o caso de o candidato colar o email diretamente após o nome sem espaçamento.
 - **Verificação:** Execução do `dotnet test` assegurando a captura correta no novo cenário parametrizado do `InlineData`.
 - **Limitações Conhecidas:** Dependendo do formato do texto, palavras residuais como a cidade/país ("Brazil") ainda podem ficar anexadas ao nome se não forem precedidas por um dos delimitadores da regra. O objetivo é reduzir a fricção do *autofill*, não garantir 100% de perfeição.
+
+## Bloco 35: Modernização de UI/UX e Foco em Acessibilidade
+- **Etapa/Funcionalidade:** Refatoração visual e semântica do componente `ResumeForm.tsx`, implementando atributos de acessibilidade (ARIA) e melhorando o feedback visual do utilizador.
+- **Decisão Técnica e Motivação:** Optou-se por reverter a iniciativa de conteinerização (Docker) para manter o foco arquitetural da entrega nos requisitos centrais (Backend limpo e Frontend reativo). No Frontend, o formulário foi modernizado utilizando CSS *inline* para evitar a injeção de dependências pesadas (como Material UI), garantindo um design de "Card" moderno. Atributos como `htmlFor`, `aria-invalid` e `role="alert"` foram adicionados para suportar leitores de tela e cumprir diretrizes básicas de acessibilidade (a11y).
+- **Participação da IA:** Forneceu o código refatorado do formulário, aplicando boas práticas de UX (desabilitação de botão no carregamento, caixas de erro estruturadas e separação visual da área de Autofill).
+- **Adaptações e Correções:** O esquema do Zod permaneceu inalterado para manter total compatibilidade com os testes unitários já escritos.
+- **Verificação:** Execução da suite de testes do React Testing Library (`npm run test`) para garantir que os elementos continuam acessíveis pelas *queries* baseadas no DOM acessível (`getByLabelText`, `getByRole`).
+- **Limitações Conhecidas:** A utilização de estilos *inline* em larga escala pode dificultar a manutenção futura caso o sistema cresça. A adoção de ferramentas como Tailwind CSS ou CSS Modules seria o próximo passo natural numa evolução do projeto.
+
+## Bloco 36: Sincronização de Testes de UI/Acessibilidade
+- **Etapa/Funcionalidade:** Atualização dos seletores do React Testing Library no `ResumeForm.test.tsx` para refletir as mudanças semânticas do componente.
+- **Decisão Técnica e Motivação:** A refatoração visual e de acessibilidade (a11y) do `ResumeForm` alterou o `aria-label` do input de upload de ficheiro. Como o TDD exige que os testes atuem como documentação viva e garantam a usabilidade do ponto de vista do utilizador, a falha (`TestingLibraryElementError`) bloqueou a pipeline. O seletor foi atualizado de `getByLabelText(/fazer upload.../)` para `getByLabelText(/upload de pdf para preenchimento automático/i)`, alinhando o teste com a nova árvore de acessibilidade do DOM.
+- **Participação da IA:** Analisou o *stack trace* do erro em conjunto com o código-fonte atualizado, identificou a divergência textual na *query* do `getByLabelText` e sugeriu a adequação no ficheiro de teste.
+- **Adaptações e Correções:** O regex do seletor no teste foi alterado para ignorar *case sensitivity* (`/i`) e bater exatamente com o novo atributo `aria-label`.
+- **Verificação:** Execução da suite `npm run test`, confirmando que o DOM virtual localiza corretamente o elemento e interage com o `FormData`.
+- **Limitações Conhecidas:** Testes estritamente acoplados a textos de UI podem ser frágeis (tendem a quebrar se o *copywriting* mudar). No entanto, o uso de `getByLabelText` ou `getByRole` ainda é preferível a `getByTestId`, pois valida a acessibilidade real da aplicação.
