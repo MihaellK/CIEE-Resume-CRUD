@@ -40,7 +40,7 @@ A aplicação já está pré-configurada para rodar rapidamente num ambiente de 
 
 ### 1. Configuração do Banco de Dados (SQL Server via Docker)
 
-O projeto inclui um `docker-compose.yml` na raiz que levanta automaticamente uma instância do SQL Server 2022 perfeitamente alinhada com as configurações da API.
+O projeto inclui um `docker-compose.yml` na raiz que levanta automaticamente uma instância do SQL Server 2022 perfeitamente alinhada com as configurações da API. 
 
 1. Na raiz do projeto, execute o comando para iniciar o banco de dados em background:
    ```bash
@@ -49,7 +49,7 @@ O projeto inclui um `docker-compose.yml` na raiz que levanta automaticamente uma
 
 Aguarde alguns segundos. O container inclui um healthcheck nativo que garante que o banco está pronto para receber conexões antes de prosseguirmos.
 
-*(Nota: Se preferir rodar sem Docker, instale o SQL Server localmente e atualize a `DefaultConnection` no arquivo `ResumeCrud.API/appsettings.Development.json` para apontar para a sua instância).*
+*(Nota: Se preferir rodar sem Docker, instale o SQL Server localmente e atualize a `DefaultConnection` no arquivo `ResumeCrud.API/appsettings.Development.json` para apontar para a sua instância). **(Via Docker é a forma que foi testada e é a recomendada para esse passo)***
 
 ---
 
