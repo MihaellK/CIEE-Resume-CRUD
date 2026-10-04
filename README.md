@@ -29,64 +29,45 @@ O projeto foi construído seguindo os princípios de **Clean Architecture** simp
 Para rodar este projeto localmente, você precisará de:
 - [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
 - [Node.js](https://nodejs.org/) (versão 24.21 ou superior)
-- SQL Server (via Docker, LocalDB ou Developer Edition)
-- Docker Desktop (Recomendado para o banco de dados)
+- SQL Server (via Docker - testado e recomendado -, LocalDB ou Developer Edition)
+- Docker Desktop (Opcional, para facilita gerenciamento de containeres)
 
 ---
 
 ## 🚀 Como Configurar e Executar
 
-### 1. Configuração do Banco de Dados (SQL Server)
+A aplicação já está pré-configurada para rodar rapidamente num ambiente de desenvolvimento local utilizando os arquivos de configuração fornecidos no repositório.
 
-#### Opção A: Rodando via Docker (Recomendado e Testado)
-Para levantar uma instância do SQL Server 2022 via Docker, execute o comando abaixo no seu terminal. Ele criará um container rodando na porta `1433` com a senha configurada:
+### 1. Configuração do Banco de Dados (SQL Server via Docker)
 
-```bash
-docker run -e "ACCEPT_EULA=Y" -e "MSSQL_SA_PASSWORD=YourStrong!Password" -p 1433:1433 --name sqlserver_resume -d mcr.microsoft.com/mssql/server:2022-latest
-```
+O projeto inclui um `docker-compose.yml` na raiz que levanta automaticamente uma instância do SQL Server 2022 perfeitamente alinhada com as configurações da API.
 
-*(Nota: Certifique-se de que a senha usada aqui seja a mesma configurada na Connection String do `appsettings.json` na próxima etapa).*
+1. Na raiz do projeto, execute o comando para iniciar o banco de dados em background:
+   ```bash
+   docker-compose up -d
+   ```
 
-#### Opção B: Rodando Localmente sem Docker (Aviso: Não Testado)
-Você pode utilizar uma instalação local do SQL Server Express ou Developer Edition. 
+Aguarde alguns segundos. O container inclui um healthcheck nativo que garante que o banco está pronto para receber conexões antes de prosseguirmos.
 
-> **Aviso:** Esta abordagem não foi o foco dos testes durante o desenvolvimento.
-
-Se optar por este caminho, instale a engine do SQL Server, certifique-se de que o serviço está rodando e atualize a `ConnectionString` no arquivo `appsettings.json` para refletir a sua instância local (ex: `"Server=(localdb)\\mssqllocaldb;Database=ResumeCrudDb;Trusted_Connection=True;MultipleActiveResultSets=true"`).
+*(Nota: Se preferir rodar sem Docker, instale o SQL Server localmente e atualize a `DefaultConnection` no arquivo `ResumeCrud.API/appsettings.Development.json` para apontar para a sua instância).*
 
 ---
 
 ### 2. Configuração da API (Backend)
 
-O projeto utiliza o Entity Framework Core com a abordagem Code-First.
+O projeto utiliza o Entity Framework Core com a abordagem Code-First. As configurações locais já estão prontas no arquivo `appsettings.Development.json`.
 
 1. Navegue até a pasta do backend:
    ```bash
    cd ResumeCrud.API
    ```
 
-2. Crie um arquivo `appsettings.json` na raiz da pasta `ResumeCrud.API`. Você pode usar o modelo abaixo (sem credenciais reais de produção):
-   ```json
-   {
-     "Logging": {
-       "LogLevel": {
-         "Default": "Information",
-         "Microsoft.AspNetCore": "Warning"
-       }
-     },
-     "AllowedHosts": "*",
-     "ConnectionStrings": {
-       "DefaultConnection": "Server=localhost,1433;Database=ResumeCrudDb;User Id=sa;Password=YourStrong!Password;TrustServerCertificate=True;"
-     }
-   }
-   ```
-
-3. Crie a estrutura do banco de dados rodando as Migrations:
+2. Crie a estrutura do banco de dados aplicando as Migrations:
    ```bash
    dotnet ef database update
    ```
 
-4. Execute a API:
+3. Execute a API:
    ```bash
    dotnet run
    ```
